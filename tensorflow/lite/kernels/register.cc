@@ -295,11 +295,11 @@ BuiltinOpResolver::BuiltinOpResolver() {
   AddCustom("NumericVerify", tflite::ops::custom::Register_NUMERIC_VERIFY());
   // TODO(andrewharp, ahentz): Move these somewhere more appropriate so that
   // custom ops aren't always included by default.
-  AddCustom("Mfcc", tflite::ops::custom::Register_MFCC());
-  AddCustom("AudioSpectrogram",
-            tflite::ops::custom::Register_AUDIO_SPECTROGRAM());
-  AddCustom("TFLite_Detection_PostProcess",
-            tflite::ops::custom::Register_DETECTION_POSTPROCESS());
+  // AddCustom("Mfcc", tflite::ops::custom::Register_MFCC());
+  // AddCustom("AudioSpectrogram",
+            // tflite::ops::custom::Register_AUDIO_SPECTROGRAM());
+  // AddCustom("TFLite_Detection_PostProcess",
+            // tflite::ops::custom::Register_DETECTION_POSTPROCESS());
 }
 
 }  // namespace builtin
