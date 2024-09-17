@@ -29,7 +29,7 @@ class TTXLA_Op<string mnemonic, list<Trait> traits = []> :
 }
 
 def TTXLA_SparseDotOp : TTXLA_Op<"sparse_dot", [
-        Pure, DeclareOpInterfaceMethods<InferTypeOpInterface>,
+        Pure, DotLike, DeclareOpInterfaceMethods<InferTypeOpInterface>,
         TypesMatchWith<"result's type matches accumulator's type", "d", "c", "$_self">]> {
     let summary = "sparse dot";
 
