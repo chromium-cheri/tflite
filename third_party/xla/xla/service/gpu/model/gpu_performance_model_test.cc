@@ -15,7 +15,6 @@ limitations under the License.
 
 #include "xla/service/gpu/model/gpu_performance_model.h"
 
-#include <cstdint>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -52,18 +51,10 @@ namespace {
 
 class GpuPerformanceModelTest : public HloTestBase {
  public:
-  GpuPerformanceModel::RunTimes EstimateRunTimesDefault(
+  GpuPerformanceModel::RunTimes EstimateRunTimes(
       const HloInstruction* producer,
       std::vector<HloInstruction*> fused_consumers = {}) {
-    return GpuPerformanceModel::EstimateRunTimes(
-        producer, device_info_, &analysis_,
-        GpuPerformanceModelOptions::Default(), fused_consumers);
-  }
-
-  GpuPerformanceModel::RunTimes EstimateRunTimesForPriorityFusion(
-      const HloInstruction* producer,
-      std::vector<HloInstruction*> fused_consumers = {}) {
-    auto config = GpuPerformanceModelOptions::PriorityFusion(
+    auto config = GpuPerformanceModelOptions::Default(
         &fusion_analysis_cache_, &gpu_performance_model_cache_);
 
     auto runtime_data = GpuPerformanceModel::EstimateRunTimeForInstruction(
@@ -74,7 +65,7 @@ class GpuPerformanceModelTest : public HloTestBase {
           consumer, device_info_, &analysis_, config);
       gpu_performance_model_cache_.Set(*consumer, runtime_data);
     }
-    return GpuPerformanceModel::EstimateRunTimesForPriorityFusion(
+    return GpuPerformanceModel::EstimateRunTimes(
         producer, device_info_, &analysis_, config, fused_consumers);
   }
 
@@ -112,13 +103,9 @@ ENTRY e {
   HloInstruction* root = module->entry_computation()->root_instruction();
   ASSERT_IS_OK(module->entry_computation()->Accept(&analysis_));
 
-  auto t = EstimateRunTimesDefault(root);
+  auto t = EstimateRunTimes(root);
   // Dominated by the DRAM bandwidth.
   EXPECT_NEAR(absl::ToInt64Microseconds(t.time_unfused), 53, 10);
-
-  auto prio_t = EstimateRunTimesForPriorityFusion(root);
-  // Dominated by the DRAM bandwidth.
-  EXPECT_NEAR(absl::ToInt64Microseconds(prio_t.time_unfused), 53, 10);
 
   auto indexing_t = indexing_cost_model_.EstimateRunTimes(root);
   EXPECT_NEAR(absl::ToInt64Microseconds(indexing_t.time_unfused), 53, 10);
@@ -145,7 +132,7 @@ ENTRY e {
   HloInstruction* root = module->entry_computation()->root_instruction();
   ASSERT_IS_OK(root->Accept(&analysis_));
 
-  auto t = EstimateRunTimesDefault(root);
+  auto t = EstimateRunTimes(root);
   // Dominated by the kernel launch overhead.
   EXPECT_NEAR(absl::ToInt64Microseconds(t.time_unfused), 1, 1);
 
@@ -182,7 +169,7 @@ ENTRY e {
   HloInstruction* root = module->entry_computation()->root_instruction();
   ASSERT_IS_OK(root->Accept(&analysis_));
 
-  auto t = EstimateRunTimesDefault(root);
+  auto t = EstimateRunTimes(root);
   // Dominated by the DRAM bandwidth.
   EXPECT_NEAR(absl::ToInt64Microseconds(t.time_unfused), 175, 30);
 
@@ -220,7 +207,7 @@ ENTRY e {
   HloInstruction* root = module->entry_computation()->root_instruction();
   ASSERT_IS_OK(root->Accept(&analysis_));
 
-  auto t = EstimateRunTimesDefault(root);
+  auto t = EstimateRunTimes(root);
   // Parameter 0 read is accelerated by L1 cache even though the total data
   // volume is the same as in the test LargeReadWrite above.
   EXPECT_NEAR(absl::ToInt64Microseconds(t.time_unfused), 118, 12);
@@ -249,7 +236,7 @@ ENTRY e {
   HloInstruction* root = module->entry_computation()->root_instruction();
   ASSERT_IS_OK(root->Accept(&analysis_));
 
-  auto t = EstimateRunTimesDefault(root);
+  auto t = EstimateRunTimes(root);
   // Parameter 0 read is accelerated by L2 cache (does not fit in L1).
   EXPECT_NEAR(absl::ToInt64Microseconds(t.time_unfused), 123, 12);
 }
@@ -281,7 +268,7 @@ TEST_F(GpuPerformanceModelTest, UnusedParameter) {
   HloInstruction* root = module->entry_computation()->root_instruction();
   ASSERT_IS_OK(module->entry_computation()->Accept(&analysis_));
 
-  auto t = EstimateRunTimesDefault(root);
+  auto t = EstimateRunTimes(root);
   EXPECT_NEAR(absl::ToInt64Microseconds(t.time_unfused), 1, 1);
 }
 
@@ -346,7 +333,7 @@ ENTRY fusion {
     std::vector<HloInstruction*> consumers{
         module->entry_computation()->GetInstructionWithName("reduce.2")};
 
-    return EstimateRunTimesDefault(producer, consumers);
+    return EstimateRunTimes(producer, consumers);
   };
 
   TF_ASSERT_OK_AND_ASSIGN(auto large_small_reduce_runtime,
@@ -387,7 +374,7 @@ ENTRY fusion {
   std::vector<HloInstruction*> consumers{
       module->entry_computation()->GetInstructionWithName("reduce.1")};
 
-  auto t = EstimateRunTimesForPriorityFusion(producer, consumers);
+  auto t = EstimateRunTimes(producer, consumers);
   EXPECT_NEAR(absl::ToInt64Microseconds(t.time_unfused), 105, 10);
   EXPECT_NEAR(absl::ToInt64Microseconds(t.time_fused), 514, 10);
 }
@@ -429,7 +416,7 @@ ENTRY fusion {
   std::vector<HloInstruction*> consumers{
       module->entry_computation()->GetInstructionWithName("reduce.1")};
 
-  auto t = EstimateRunTimesForPriorityFusion(producer, consumers);
+  auto t = EstimateRunTimes(producer, consumers);
   EXPECT_NEAR(absl::ToInt64Microseconds(t.time_unfused), 105, 10);
   EXPECT_NEAR(absl::ToInt64Microseconds(t.time_fused), 514, 10);
 }
@@ -460,11 +447,8 @@ ENTRY fusion {
   std::vector<HloInstruction*> consumers{
       module->entry_computation()->GetInstructionWithName("reduce.1")};
 
-  auto t = EstimateRunTimesDefault(producer, consumers);
+  auto t = EstimateRunTimes(producer, consumers);
   EXPECT_LT(t.time_fused, t.time_unfused);
-
-  auto prio_t = EstimateRunTimesForPriorityFusion(producer, consumers);
-  EXPECT_LT(prio_t.time_fused, prio_t.time_unfused);
 }
 
 TEST_F(GpuPerformanceModelTest, DusScalesWithUpdates) {
@@ -515,17 +499,12 @@ ENTRY main {
   auto* operand0 = module->entry_computation()->root_instruction()->operand(0);
   auto* operand1 = module->entry_computation()->root_instruction()->operand(1);
 
-  auto t1 = EstimateRunTimesDefault(operand0);
-  auto t2 = EstimateRunTimesDefault(operand1);
   // DUS scales with the size of the updates, so these two fusions should have
   // the same cost.
+  auto t1 = EstimateRunTimes(operand0);
+  auto t2 = EstimateRunTimes(operand1);
   EXPECT_NEAR(absl::ToInt64Microseconds(t1.time_unfused),
               absl::ToInt64Microseconds(t2.time_unfused), 10);
-
-  auto prio_t1 = EstimateRunTimesForPriorityFusion(operand0);
-  auto prio_t2 = EstimateRunTimesForPriorityFusion(operand1);
-  EXPECT_NEAR(absl::ToInt64Microseconds(prio_t1.time_unfused),
-              absl::ToInt64Microseconds(prio_t2.time_unfused), 10);
 }
 
 TEST_F(GpuPerformanceModelTest, EqualCostBeforeAndAfterFusion) {
@@ -570,7 +549,7 @@ ENTRY e2 {
   HloInstruction* consumer = computation_without_fusion->root_instruction();
   const HloInstruction* producer = consumer->operand(0);
 
-  auto t1 = EstimateRunTimesForPriorityFusion(producer, {consumer});
+  auto t1 = EstimateRunTimes(producer, {consumer});
 
   HloComputation* computation_with_fusion =
       module->GetComputationWithName("e2");
@@ -578,7 +557,7 @@ ENTRY e2 {
   HloInstruction* root_with_fusion =
       computation_with_fusion->root_instruction();
 
-  auto t2 = EstimateRunTimesForPriorityFusion(root_with_fusion);
+  auto t2 = EstimateRunTimes(root_with_fusion);
   EXPECT_EQ(t1.time_fused, t2.time_unfused);
 }
 
@@ -609,7 +588,7 @@ ENTRY fusion {
   std::vector<HloInstruction*> consumers{
       module->entry_computation()->GetInstructionWithName("divide")};
 
-  auto t = EstimateRunTimesForPriorityFusion(producer, consumers);
+  auto t = EstimateRunTimes(producer, consumers);
   EXPECT_LT(t.time_unfused, t.time_fused);
 }
 
@@ -654,10 +633,8 @@ ENTRY fusion {
   auto* fusion_0 =
       module->entry_computation()->GetInstructionWithName("fusion.0");
   auto* exp = module->entry_computation()->GetInstructionWithName("exp");
-  auto exp_consumer_runtimes =
-      EstimateRunTimesForPriorityFusion(fusion_0, {exp});
-  auto exp_producer_runtimes =
-      EstimateRunTimesForPriorityFusion(exp, exp->users());
+  auto exp_consumer_runtimes = EstimateRunTimes(fusion_0, {exp});
+  auto exp_producer_runtimes = EstimateRunTimes(exp, exp->users());
 
   auto exp_consumer_priority =
       exp_consumer_runtimes.time_unfused - exp_consumer_runtimes.time_fused;
@@ -698,7 +675,7 @@ ENTRY fusion {
   auto* fusion = module->entry_computation()->GetInstructionWithName("fusion");
   auto* reduce = module->entry_computation()->GetInstructionWithName("reduce");
 
-  auto t = EstimateRunTimesForPriorityFusion(fusion, {reduce});
+  auto t = EstimateRunTimes(fusion, {reduce});
 
   EXPECT_LT(t.time_unfused, t.time_fused);
 }
@@ -718,7 +695,7 @@ ENTRY fusion {
   auto* producer = module->entry_computation()->GetInstructionWithName("exp");
   auto* consumer = module->entry_computation()->GetInstructionWithName("add");
 
-  auto config = GpuPerformanceModelOptions::PriorityFusion(
+  auto config = GpuPerformanceModelOptions::Default(
       &fusion_analysis_cache_, &gpu_performance_model_cache_);
 
   auto producer_runtime = EstimateRunTimeData::Infinite();
@@ -749,7 +726,7 @@ ENTRY fusion {
   auto* producer = module->entry_computation()->GetInstructionWithName("exp");
   auto* consumer = module->entry_computation()->GetInstructionWithName("add");
 
-  auto config = GpuPerformanceModelOptions::PriorityFusion(
+  auto config = GpuPerformanceModelOptions::Default(
       &fusion_analysis_cache_, &gpu_performance_model_cache_);
 
   auto producer_runtime = GpuPerformanceModel::EstimateRunTimeForInstruction(
