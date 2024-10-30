@@ -44,27 +44,41 @@ ln -s "/usr/include/linux" "${TARGET}/usr/include/linux"
 ln -s "/usr/include/asm-generic" "${TARGET}/usr/include/asm-generic"
 ln -s "/usr/include/aarch64-linux-gnu/asm" "${TARGET}/usr/include/asm"
 
+echo "quoct checking bin"
+ls /usr/bin | grep gcc
+
 # Download glibc's shared and development libraries based on the value of the
 # `VERSION` parameter.
 # Note: 'Templatizing' this and the other conditional branches would require
 # defining several variables (version, os, path) making it difficult to maintain
 # and extend for future modifications.
+echo "quoct 01"
 mkdir -p glibc-src
 mkdir -p glibc-build
 cd glibc-src
+echo "quoct 02"
 wget --retry-connrefused --waitretry=1 --read-timeout=20 --timeout=15 --tries=5 "https://vault.centos.org/centos/7/os/Source/SPackages/glibc-2.17-317.el7.src.rpm"
 rpm2cpio "glibc-2.17-317.el7.src.rpm" |cpio -idmv
 tar -xvzf "glibc-2.17-c758a686.tar.gz" --strip 1
 tar -xvzf "glibc-2.17-c758a686-releng.tar.gz" --strip 1
+echo "quoct 03"
 sed -i '/patch0060/d' glibc.spec
+echo "quoct 04"
 /rpm-patch.sh "glibc.spec"
+echo "quoct 05"
 rm -f "glibc-2.17-317.el7.src.rpm" "glibc-2.17-c758a686.tar.gz" "glibc-2.17-c758a686-releng.tar.gz"
+echo "quoct 06"
 patch -p1 < /gcc9-fixups.patch
+echo "quoct 07"
 patch -p1 < /stringop_trunc.patch
 cd ../glibc-build
-../glibc-src/configure --prefix=/usr --disable-werror --enable-obsolete-rpc --disable-profile
+echo "quoct 08"
+../glibc-src/configure CC="gcc-9" --prefix=/usr --disable-werror --enable-obsolete-rpc --disable-profile
+echo "quoct 09"
 make -j$(nproc)
+echo "quoct 10"
 make install DESTDIR=${TARGET}
+echo "quoct 11"
 cd ..
 
 # Symlinks in the binary distribution are set up for installation in /usr, we
@@ -74,6 +88,7 @@ cd ..
 # Patch to allow non-glibc 2.12 compatible builds to work.
 sed -i '54i#define TCP_USER_TIMEOUT 18' "/${TARGET}/usr/include/netinet/tcp.h"
 
+echo "quoct 05"
 # Download specific version of libstdc++ shared library based on the value of
 # the `VERSION` parameter
   # Download binary libstdc++ 4.8 shared library release
@@ -106,6 +121,7 @@ esac
 
 mkdir -p "${TARGET}-build"
 cd "${TARGET}-build"
+echo "quoct 06"
 
 "${TARGET}-src/configure" \
       --prefix="${TARGET}/usr" \
@@ -151,7 +167,7 @@ cp "./aarch64-unknown-linux-gnu/libstdc++-v3/src/.libs/libstdc++_nonshared44.a" 
 # TODO(klimek): Automate linking in all non-gcc / non-kernel include
 # directories.
 mkdir -p "${TARGET}/usr/include/aarch64-linux-gnu"
-PYTHON_VERSIONS=("python3.8" "python3.9" "python3.10" "python3.11")
+PYTHON_VERSIONS=("python3.9" "python3.10" "python3.11" "python3.12")
 for v in "${PYTHON_VERSIONS[@]}"; do
   ln -s "/usr/local/include/${v}" "${TARGET}/usr/include/aarch64-linux-gnu/${v}"
 done

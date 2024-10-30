@@ -21,13 +21,13 @@ libhdf5-serial-dev
 libomp-18-dev
 libssl-dev
 libtool
+libssl-dev
 libxml2-dev
 libxslt1-dev
 libzmq3-dev
 mlocate
 moreutils
 openjdk-21-jdk
-openjdk-21-jre-headless
 openssl
 parallel
 patchelf

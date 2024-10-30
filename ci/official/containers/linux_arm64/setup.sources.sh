@@ -36,10 +36,10 @@ apt-key adv --fetch-keys https://apt.llvm.org/llvm-snapshot.gpg.key
 # Set up custom sources
 cat >/etc/apt/sources.list.d/custom.list <<SOURCES
 # More Python versions: Deadsnakes
-deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu focal main
-deb-src http://ppa.launchpad.net/deadsnakes/ppa/ubuntu focal main
+deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main
+deb-src http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main
 
 # LLVM/Clang 18 repository
-deb http://apt.llvm.org/focal/ llvm-toolchain-focal-18 main
-deb-src http://apt.llvm.org/focal/ llvm-toolchain-focal-18 main
+deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main
+deb-src http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main
 SOURCES

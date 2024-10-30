@@ -1,7 +1,6 @@
 # JAX requirements, passed into container by defining the ARG 
 # REQUIREMENTS_FILE=jax.requirements.txt
 
-
 setuptools
 wheel
 cloudpickle

@@ -28,6 +28,11 @@ if [[ "$TFCI_WHL_NUMPY_VERSION" == 1 ]]; then
   cp ./ci/official/requirements_updater/numpy1_requirements/*.txt .
 fi
 
+echo "quoct"
+tfrun python3 --version
+tfrun python3 -m pip list
+tfrun python3 -m auditwheel
+
 if [[ $TFCI_PYCPP_SWAP_TO_BUILD_ENABLE == 1 ]]; then
   tfrun bazel build $TFCI_BAZEL_COMMON_ARGS --profile "$PROFILE_JSON_PATH" --@local_config_cuda//cuda:override_include_cuda_libs=true --config="${TFCI_BAZEL_TARGET_SELECTING_CONFIG_PREFIX}_pycpp_test"
 else
