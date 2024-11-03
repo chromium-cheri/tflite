@@ -52,6 +52,7 @@ cc_library(
         "//tensorflow/compiler/mlir/lite:__subpackages__",
         "//tensorflow/compiler/mlir/quantization/tensorflow/utils:__pkg__",
         "//tensorflow/lite/core/c:__subpackages__",
+        "//tensorflow/lite/ios:__subpackages__",
     ],
     alwayslink = 1,  # Why?? TODO(b/161243354): eliminate this.
 )
