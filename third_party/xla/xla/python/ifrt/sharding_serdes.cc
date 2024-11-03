@@ -48,7 +48,8 @@ class SingleDeviceShardingSerDes
     return "xla::ifrt::SingleDeviceSharding";
   }
 
-  absl::StatusOr<std::string> Serialize(Serializable& serializable) override {
+  absl::StatusOr<std::string> Serialize(
+      Serializable& serializable, std::unique_ptr<SerializeOptions>) override {
     const SingleDeviceSharding& sharding =
         llvm::cast<SingleDeviceSharding>(serializable);
     SingleDeviceShardingProto proto;
@@ -91,7 +92,8 @@ class OpaqueShardingSerDes
     return "xla::ifrt::OpaqueSharding";
   }
 
-  absl::StatusOr<std::string> Serialize(Serializable& serializable) override {
+  absl::StatusOr<std::string> Serialize(
+      Serializable& serializable, std::unique_ptr<SerializeOptions>) override {
     const OpaqueSharding& sharding = llvm::cast<OpaqueSharding>(serializable);
     OpaqueShardingProto proto;
     *proto.mutable_devices() = sharding.devices()->ToProto();
@@ -134,7 +136,8 @@ class ConcreteShardingSerDes
     return "xla::ifrt::ConcreteSharding";
   }
 
-  absl::StatusOr<std::string> Serialize(Serializable& serializable) override {
+  absl::StatusOr<std::string> Serialize(
+      Serializable& serializable, std::unique_ptr<SerializeOptions>) override {
     const ConcreteSharding& sharding =
         llvm::cast<ConcreteSharding>(serializable);
     ConcreteShardingProto proto;
@@ -218,7 +221,8 @@ class ConcreteEvenShardingSerDes
     return "xla::ifrt::ConcreteEvenSharding";
   }
 
-  absl::StatusOr<std::string> Serialize(Serializable& serializable) override {
+  absl::StatusOr<std::string> Serialize(
+      Serializable& serializable, std::unique_ptr<SerializeOptions>) override {
     const ConcreteEvenSharding& sharding =
         llvm::cast<ConcreteEvenSharding>(serializable);
     ConcreteEvenShardingProto proto;
