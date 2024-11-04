@@ -214,4 +214,9 @@ absl::StatusOr<HloInstruction*> ExpandIndexVectorIntoOperandSpace(
   return MakeConcatHlo(expanded_index_components, /*dimension=*/0);
 }
 
+bool IsCollapsedOrBatchingDim(const GatherDimensionNumbers& dim_numbers,
+                              int64_t dim) {
+  return absl::c_linear_search(dim_numbers.collapsed_slice_dims(), dim) ||
+         absl::c_linear_search(dim_numbers.operand_batching_dims(), dim);
+}
 }  // namespace xla
