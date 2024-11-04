@@ -239,6 +239,39 @@ tsl_cc_test(
     ] + tsl_grpc_cc_dependencies(),
 )
 
+tsl_cc_test(
+    name = "client_server_test",
+    size = "medium",
+    srcs = ["client_server_test.cc"],
+    tags = if_oss([
+        "manual",
+        "no_oss",
+    ]),  # b/169705709, no protobuf matchers in OSS.
+    deps = [
+        "//xla/tsl/distributed_runtime/coordination:coordination_client",
+        "//xla/tsl/distributed_runtime/coordination:coordination_service",
+        "//xla/tsl/distributed_runtime/coordination:coordination_service_agent",
+        "//xla/tsl/distributed_runtime/coordination:coordination_service_impl",
+        "//xla/tsl/distributed_runtime/rpc:async_service_interface",
+        "//xla/tsl/distributed_runtime/rpc/coordination:grpc_coordination_client",
+        "//xla/tsl/distributed_runtime/rpc/coordination:grpc_coordination_service_impl",
+        "//xla/tsl/lib/core:status_test_util",
+        "//xla/tsl/protobuf:coordination_config_proto_cc_impl",
+        "//xla/tsl/protobuf:coordination_service_proto_cc_impl",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_absl//absl/time",
+        "@com_google_absl//absl/types:span",
+        "@local_tsl//tsl/platform:env",
+        "@local_tsl//tsl/platform:errors",
+        "@local_tsl//tsl/platform:status",
+        "@local_tsl//tsl/platform:test",
+        "@local_tsl//tsl/platform:test_main",
+    ] + tsl_grpc_cc_dependencies(),
+)
+
 filegroup(
     name = "pywrap_required_hdrs",
     srcs = [
