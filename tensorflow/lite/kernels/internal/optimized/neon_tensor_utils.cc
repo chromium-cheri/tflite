@@ -557,7 +557,13 @@ static void DotprodMatrixBatchFourVectorMultiplyAccumulate(
           "ld2 {v9.s, v10.s}[1], [%[result_ptr]], %[wide_rows]\n"
           "ld2 {v9.s, v10.s}[2], [%[result_ptr]], %[wide_rows]\n"
           "ld2 {v9.s, v10.s}[3], [%[result_ptr]], %[wide_rows]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+	  "gcvalue x0, %[result_ptr]\n"
+	  "sub x0, x0, %[wide_rows]\n"
+	  "scvalue %[result_ptr], %[result_ptr], x0\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "sub %[result_ptr], %[result_ptr], %[wide_rows], lsl #2\n"
+#endif  // !__CHERI_PURE_CAPABILITY__
           "fadd v9.4s, v9.4s, v0.4s\n"
           "fadd v10.4s, v10.4s, v1.4s\n"
           "st2 {v9.s, v10.s}[0], [%[result_ptr]], %[wide_rows]\n"
@@ -735,8 +741,8 @@ static void DotprodSparseMatrixBatchVectorMultiplyAccumulate(
             "ldrb w7, [%[ledger_ptr]], #1\n"
 
             // Read 16 bytes of vector data from (vec_ptr + (ledger_index * 16))
-            "add x8, %[vec_ptr], x7, lsl #4\n"
-            "ld1 {v9.16b}, [x8]\n"
+            "add c8, %[vec_ptr], x7, lsl #4\n"
+            "ld1 {v9.16b}, [c8]\n"
 
             // Dot product of matrix row and vector.
             ".word 0x4e889520  // sdot v0.4s, v9.16b, v8.16b\n"
