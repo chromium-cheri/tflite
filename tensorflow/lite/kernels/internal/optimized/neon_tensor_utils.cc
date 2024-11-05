@@ -735,8 +735,8 @@ static void DotprodSparseMatrixBatchVectorMultiplyAccumulate(
             "ldrb w7, [%[ledger_ptr]], #1\n"
 
             // Read 16 bytes of vector data from (vec_ptr + (ledger_index * 16))
-            "add x8, %[vec_ptr], x7, lsl #4\n"
-            "ld1 {v9.16b}, [x8]\n"
+            "add c8, %[vec_ptr], x7, lsl #4\n"
+            "ld1 {v9.16b}, [c8]\n"
 
             // Dot product of matrix row and vector.
             ".word 0x4e889520  // sdot v0.4s, v9.16b, v8.16b\n"

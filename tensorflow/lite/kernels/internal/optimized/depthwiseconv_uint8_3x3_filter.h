@@ -201,8 +201,13 @@ static_assert(offsetof(DepthwiseConvParams, output_height) ==
 #define DP_OFFSET_FOUR_OVER_STRIDE DP_OFFSET_WORKSPACE_HEIGHT_STRIDE + 4
 //
 #define DP_OFFSET_OUTPUT_MULTPLIPLIER_PER_CHANNEL DP_OFFSET_FOUR_OVER_STRIDE + 4
+#if defined(__CHERI_PURE_CAPABILITY__)
+#define DP_OFFSET_OUTPUT_SHIFT_PER_CHANNEL \
+  DP_OFFSET_OUTPUT_MULTPLIPLIER_PER_CHANNEL + sizeof(void *) 
+#else   // !__CHERI_PURE_CAPABILITY__
 #define DP_OFFSET_OUTPUT_SHIFT_PER_CHANNEL \
   DP_OFFSET_OUTPUT_MULTPLIPLIER_PER_CHANNEL + 8
+#endif  // !__CHERI_PURE_CAPABILITY__
 
 static_assert(offsetof(DepthwiseConvDotProdParams, input_depth) ==
                   DP_OFFSET_INPUT_DEPTH,
