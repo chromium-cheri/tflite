@@ -35,6 +35,104 @@ namespace optimized_4bit {
 #define INNER_LOOP_POSTAMBLE "7"
 #define END "8"
 
+#if defined(__CHERI_PURE_CAPABILITY__)
+#define KERNEL_4x1                   \
+  "dup v24.16b, %w[bit_shift]\n"     \
+  "mov c0, %[element_ptr]\n"         \
+  "mov c6, %[lhs_val]\n"             \
+  "mov c1, %[rhs_val]\n"             \
+                                     \
+      INNER_LOOP_BEGIN               \
+  ":\n"                              \
+  "mov c4, c6\n"                     \
+  "ld1 {v4.16b}, [c4], #16\n"        \
+  "dup v16.4s, wzr\n"                \
+  "dup v17.4s, wzr\n"                \
+  "ld1 {v5.16b}, [c4], #16\n"        \
+  "dup v18.4s, wzr\n"                \
+  "dup v19.4s, wzr\n"                \
+  "ld1 {v6.16b}, [c4], #16\n"        \
+  "and v8.16b, v4.16b, v24.16b\n"    \
+  "and v9.16b, v5.16b, v24.16b\n"    \
+  "ld1 {v7.16b}, [c4], #16\n"        \
+  "ushr v12.16b, v4.16b, #4\n"       \
+  "ushr v13.16b, v5.16b, #4\n"       \
+  "ld1 {v0.16b}, [c1], #16\n"        \
+  "and v10.16b, v6.16b, v24.16b\n"   \
+  "and v11.16b, v7.16b, v24.16b\n"   \
+  "ld1 {v1.16b}, [c1], #16\n"        \
+  "ushr v14.16b, v6.16b, #4\n"       \
+  "ushr v15.16b, v7.16b, #4\n"       \
+  "mov w3, %w[run_depth]\n"          \
+  "subs w3, w3, #1\n"                \
+  "b.ls " INNER_LOOP_END "f\n"       \
+                                     \
+      INNER_LOOP                     \
+  ":\n"                              \
+  "ld1 {v4.16b}, [c4], #16\n"        \
+  "smull v20.8h, v12.8b, v0.8b\n"    \
+  "smull v21.8h, v13.8b, v0.8b\n"    \
+  "smull v22.8h, v14.8b, v0.8b\n"    \
+  "ld1 {v5.16b}, [c4], #16\n"        \
+  "smull v23.8h, v15.8b, v0.8b\n"    \
+  "smlal v20.8h, v8.8b, v1.8b\n"     \
+  "smlal v21.8h, v9.8b, v1.8b\n"     \
+  "ld1 {v6.16b}, [c4], #16\n"        \
+  "smlal v22.8h, v10.8b, v1.8b\n"    \
+  "smlal v23.8h, v11.8b, v1.8b\n"    \
+  "smlal2 v20.8h, v12.16b, v0.16b\n" \
+  "ld1 {v7.16b}, [c4], #16\n"        \
+  "smlal2 v21.8h, v13.16b, v0.16b\n" \
+  "smlal2 v22.8h, v14.16b, v0.16b\n" \
+  "smlal2 v23.8h, v15.16b, v0.16b\n" \
+  "smlal2 v20.8h, v8.16b, v1.16b\n"  \
+  "smlal2 v21.8h, v9.16b, v1.16b\n"  \
+  "smlal2 v22.8h, v10.16b, v1.16b\n" \
+  "ld1 {v0.16b}, [c1], #16\n"        \
+  "smlal2 v23.8h, v11.16b, v1.16b\n" \
+  "sadalp v16.4s, v20.8h\n"          \
+  "sadalp v17.4s, v21.8h\n"          \
+  "sadalp v18.4s, v22.8h\n"          \
+  "sadalp v19.4s, v23.8h\n"          \
+  "ld1 {v1.16b}, [c1], #16\n"        \
+  "and v8.16b, v4.16b, v24.16b\n"    \
+  "and v9.16b, v5.16b, v24.16b\n"    \
+  "ushr v12.16b, v4.16b, #4\n"       \
+  "ushr v13.16b, v5.16b, #4\n"       \
+  "and v10.16b, v6.16b, v24.16b\n"   \
+  "and v11.16b, v7.16b, v24.16b\n"   \
+  "ushr v14.16b, v6.16b, #4\n"       \
+  "ushr v15.16b, v7.16b, #4\n"       \
+  "subs w3, w3, #1\n"                \
+  "b.hi " INNER_LOOP "b\n"           \
+                                     \
+      INNER_LOOP_END                 \
+  ":\n"                              \
+  "smull v20.8h, v12.8b, v0.8b\n"    \
+  "smull v21.8h, v13.8b, v0.8b\n"    \
+  "smull v22.8h, v14.8b, v0.8b\n"    \
+  "smull v23.8h, v15.8b, v0.8b\n"    \
+  "smlal v20.8h, v8.8b, v1.8b\n"     \
+  "smlal v21.8h, v9.8b, v1.8b\n"     \
+  "smlal v22.8h, v10.8b, v1.8b\n"    \
+  "smlal v23.8h, v11.8b, v1.8b\n"    \
+  "smlal2 v20.8h, v12.16b, v0.16b\n" \
+  "smlal2 v21.8h, v13.16b, v0.16b\n" \
+  "smlal2 v22.8h, v14.16b, v0.16b\n" \
+  "smlal2 v23.8h, v15.16b, v0.16b\n" \
+  "smlal2 v20.8h, v8.16b, v1.16b\n"  \
+  "smlal2 v21.8h, v9.16b, v1.16b\n"  \
+  "smlal2 v22.8h, v10.16b, v1.16b\n" \
+  "smlal2 v23.8h, v11.16b, v1.16b\n" \
+  "sadalp v16.4s, v20.8h\n"          \
+  "sadalp v17.4s, v21.8h\n"          \
+  "sadalp v18.4s, v22.8h\n"          \
+  "sadalp v19.4s, v23.8h\n"          \
+  "addp v4.4s, v16.4s, v17.4s\n"     \
+  "addp v5.4s, v18.4s, v19.4s\n"     \
+  "addp v6.4s, v4.4s, v5.4s\n"       \
+  "st1 {v6.4s}, [c0], #16\n"
+#else    // __CHERI_PURE_CAPABILITY__
 #define KERNEL_4x1                   \
   "dup v24.16b, %w[bit_shift]\n"     \
   "mov x0, %[element_ptr]\n"         \
@@ -131,7 +229,169 @@ namespace optimized_4bit {
   "addp v5.4s, v18.4s, v19.4s\n"     \
   "addp v6.4s, v4.4s, v5.4s\n"       \
   "st1 {v6.4s}, [x0], #16\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
+#if defined(__CHERI_PURE_CAPABILITY__)
+#define KERNEL_4x2                        \
+  "mov c0, %[element_ptr]\n"              \
+  "mov c6, %[lhs_val]\n"                  \
+  "mov c1, %[rhs_val]\n" INNER_LOOP_BEGIN \
+  ":\n"                                   \
+  "mov c4, c6\n"                          \
+  "ld1 {v4.16b}, [c4], #16\n"             \
+  "dup v31.16b, %w[bit_shift]\n"          \
+  "dup v16.4s, wzr\n"                     \
+  "dup v17.4s, wzr\n"                     \
+  "ld1 {v5.16b}, [c4], #16\n"             \
+  "dup v18.4s, wzr\n"                     \
+  "dup v19.4s, wzr\n"                     \
+  "ld1 {v6.16b}, [c4], #16\n"             \
+  "and v8.16b, v4.16b, v31.16b\n"         \
+  "and v9.16b, v5.16b, v31.16b\n"         \
+  "ld1 {v7.16b}, [c4], #16\n"             \
+  "ushr v12.16b, v4.16b, #4\n"            \
+  "ushr v13.16b, v5.16b, #4\n"            \
+  "dup v24.4s, wzr\n"                     \
+  "ld1 {v0.16b}, [c1], #16\n"             \
+  "dup v25.4s, wzr\n"                     \
+  "dup v26.4s, wzr\n"                     \
+  "ld1 {v1.16b}, [c1], #16\n"             \
+  "dup v27.4s, wzr\n"                     \
+  "and v10.16b, v6.16b, v31.16b\n"        \
+  "ld1 {v2.16b}, [c1], #16\n"             \
+  "and v11.16b, v7.16b, v31.16b\n"        \
+  "ushr v14.16b, v6.16b, #4\n"            \
+  "ld1 {v3.16b}, [c1], #16\n"             \
+  "ushr v15.16b, v7.16b, #4\n"            \
+  "mov w3, %w[run_depth]\n"               \
+  "subs w3, w3, #1\n"                     \
+  "b.ls " INNER_LOOP_END "f\n"            \
+                                          \
+      INNER_LOOP                          \
+  ":\n"                                   \
+  "smull v20.8h, v12.8b, v0.8b\n"         \
+  "smull v21.8h, v13.8b, v0.8b\n"         \
+  "smull v22.8h, v14.8b, v0.8b\n"         \
+  "ld1 {v4.16b}, [c4], #16\n"             \
+  "smull v23.8h, v15.8b, v0.8b\n"         \
+  "smlal v20.8h, v8.8b, v1.8b\n"          \
+  "smlal v21.8h, v9.8b, v1.8b\n"          \
+  "ld1 {v5.16b}, [x4], #16\n"             \
+  "smlal v22.8h, v10.8b, v1.8b\n"         \
+  "smlal v23.8h, v11.8b, v1.8b\n"         \
+  "smlal2 v20.8h, v12.16b, v0.16b\n"      \
+  "ld1 {v6.16b}, [c4], #16\n"             \
+  "smlal2 v21.8h, v13.16b, v0.16b\n"      \
+  "smlal2 v22.8h, v14.16b, v0.16b\n"      \
+  "smlal2 v23.8h, v15.16b, v0.16b\n"      \
+  "ld1 {v7.16b}, [c4], #16\n"             \
+  "smlal2 v20.8h, v8.16b, v1.16b\n"       \
+  "smlal2 v21.8h, v9.16b, v1.16b\n"       \
+  "smlal2 v22.8h, v10.16b, v1.16b\n"      \
+  "smlal2 v23.8h, v11.16b, v1.16b\n"      \
+                                          \
+  "ld1 {v0.16b}, [c1], #16\n"             \
+                                          \
+  "sadalp v16.4s, v20.8h\n"               \
+  "sadalp v17.4s, v21.8h\n"               \
+  "sadalp v18.4s, v22.8h\n"               \
+  "sadalp v19.4s, v23.8h\n"               \
+                                          \
+  "ld1 {v1.16b}, [c1], #16\n"             \
+                                          \
+  "smull v28.8h, v12.8b, v2.8b\n"         \
+  "smull v29.8h, v13.8b, v2.8b\n"         \
+  "smull v30.8h, v14.8b, v2.8b\n"         \
+  "smull v20.8h, v15.8b, v2.8b\n"         \
+                                          \
+  "smlal v28.8h, v8.8b, v3.8b\n"          \
+  "smlal v29.8h, v9.8b, v3.8b\n"          \
+  "smlal v30.8h, v10.8b, v3.8b\n"         \
+  "smlal v20.8h, v11.8b, v3.8b\n"         \
+  "smlal2 v28.8h, v12.16b, v2.16b\n"      \
+  "smlal2 v29.8h, v13.16b, v2.16b\n"      \
+  "smlal2 v30.8h, v14.16b, v2.16b\n"      \
+  "smlal2 v20.8h, v15.16b, v2.16b\n"      \
+  "smlal2 v28.8h, v8.16b, v3.16b\n"       \
+  "smlal2 v29.8h, v9.16b, v3.16b\n"       \
+  "smlal2 v30.8h, v10.16b, v3.16b\n"      \
+  "smlal2 v20.8h, v11.16b, v3.16b\n"      \
+                                          \
+  "ld1 {v2.16b}, [c1], #16\n"             \
+                                          \
+  "sadalp v24.4s, v28.8h\n"               \
+  "sadalp v25.4s, v29.8h\n"               \
+  "sadalp v26.4s, v30.8h\n"               \
+  "sadalp v27.4s, v20.8h\n"               \
+                                          \
+  "ld1 {v3.16b}, [c1], #16\n"             \
+                                          \
+  "and v8.16b, v4.16b, v31.16b\n"         \
+  "and v9.16b, v5.16b, v31.16b\n"         \
+  "ushr v12.16b, v4.16b, #4\n"            \
+  "ushr v13.16b, v5.16b, #4\n"            \
+                                          \
+  "subs w3, w3, #1\n"                     \
+                                          \
+  "and v10.16b, v6.16b, v31.16b\n"        \
+  "and v11.16b, v7.16b, v31.16b\n"        \
+  "ushr v14.16b, v6.16b, #4\n"            \
+  "ushr v15.16b, v7.16b, #4\n"            \
+                                          \
+  "b.hi " INNER_LOOP "b\n"                \
+                                          \
+      INNER_LOOP_END                      \
+  ":\n"                                   \
+  "smull v20.8h, v12.8b, v0.8b\n"         \
+  "smull v21.8h, v13.8b, v0.8b\n"         \
+  "smull v22.8h, v14.8b, v0.8b\n"         \
+  "smull v23.8h, v15.8b, v0.8b\n"         \
+  "smlal v20.8h, v8.8b, v1.8b\n"          \
+  "smlal v21.8h, v9.8b, v1.8b\n"          \
+  "smlal v22.8h, v10.8b, v1.8b\n"         \
+  "smlal v23.8h, v11.8b, v1.8b\n"         \
+  "smlal2 v20.8h, v12.16b, v0.16b\n"      \
+  "smlal2 v21.8h, v13.16b, v0.16b\n"      \
+  "smlal2 v22.8h, v14.16b, v0.16b\n"      \
+  "smlal2 v23.8h, v15.16b, v0.16b\n"      \
+  "smlal2 v20.8h, v8.16b, v1.16b\n"       \
+  "smlal2 v21.8h, v9.16b, v1.16b\n"       \
+  "smlal2 v22.8h, v10.16b, v1.16b\n"      \
+  "smlal2 v23.8h, v11.16b, v1.16b\n"      \
+  "smull v28.8h, v12.8b, v2.8b\n"         \
+  "smull v29.8h, v13.8b, v2.8b\n"         \
+  "smull v30.8h, v14.8b, v2.8b\n"         \
+  "smull v31.8h, v15.8b, v2.8b\n"         \
+  "smlal v28.8h, v8.8b, v3.8b\n"          \
+  "smlal v29.8h, v9.8b, v3.8b\n"          \
+  "smlal v30.8h, v10.8b, v3.8b\n"         \
+  "smlal v31.8h, v11.8b, v3.8b\n"         \
+  "smlal2 v28.8h, v12.16b, v2.16b\n"      \
+  "smlal2 v29.8h, v13.16b, v2.16b\n"      \
+  "smlal2 v30.8h, v14.16b, v2.16b\n"      \
+  "smlal2 v31.8h, v15.16b, v2.16b\n"      \
+  "smlal2 v28.8h, v8.16b, v3.16b\n"       \
+  "smlal2 v29.8h, v9.16b, v3.16b\n"       \
+  "smlal2 v30.8h, v10.16b, v3.16b\n"      \
+  "smlal2 v31.8h, v11.16b, v3.16b\n"      \
+                                          \
+  "sadalp v16.4s, v20.8h\n"               \
+  "sadalp v17.4s, v21.8h\n"               \
+  "sadalp v18.4s, v22.8h\n"               \
+  "sadalp v19.4s, v23.8h\n"               \
+  "sadalp v24.4s, v28.8h\n"               \
+  "sadalp v25.4s, v29.8h\n"               \
+  "sadalp v26.4s, v30.8h\n"               \
+  "sadalp v27.4s, v31.8h\n"               \
+                                          \
+  "addp v4.4s, v16.4s, v17.4s\n"          \
+  "addp v5.4s, v18.4s, v19.4s\n"          \
+  "addp v8.4s, v24.4s, v25.4s\n"          \
+  "addp v9.4s, v26.4s, v27.4s\n"          \
+  "addp v6.4s, v4.4s, v5.4s\n"            \
+  "addp v7.4s, v8.4s, v9.4s\n"            \
+  "st1 {v6.4s, v7.4s}, [c0], #32\n"
+#else    // __CHERI_PURE_CAPABILITY__
 #define KERNEL_4x2                        \
   "mov x0, %[element_ptr]\n"              \
   "mov x6, %[lhs_val]\n"                  \
@@ -291,7 +551,304 @@ namespace optimized_4bit {
   "addp v6.4s, v4.4s, v5.4s\n"            \
   "addp v7.4s, v8.4s, v9.4s\n"            \
   "st1 {v6.4s, v7.4s}, [x0], #32\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
+#if defined(__CHERI_PURE_CAPABILITY__)
+  "dup v3.16b, %w[bit_shift]\n"     \
+  "mov c0, %[element_ptr]\n"        \
+  "mov c6, %[lhs_val]\n"            \
+  "mov c1, %[rhs_val]\n"            \
+                                    \
+      INNER_LOOP_BEGIN              \
+  ":\n"                             \
+  "mov c4, c6\n"                    \
+  "ld1 {v4.16b}, [c4], #16\n"       \
+  "dup v16.4s, wzr\n"               \
+  "dup v17.4s, wzr\n"               \
+  "dup v18.4s, wzr\n"               \
+  "dup v19.4s, wzr\n"               \
+  "ld1 {v5.16b}, [c4], #16\n"       \
+  "dup v20.4s, wzr\n"               \
+  "dup v21.4s, wzr\n"               \
+  "dup v22.4s, wzr\n"               \
+  "ld1 {v6.16b}, [c4], #16\n"       \
+  "dup v23.4s, wzr\n"               \
+  "dup v24.4s, wzr\n"               \
+  "dup v25.4s, wzr\n"               \
+  "ld1 {v7.16b}, [c4], #16\n"       \
+  "dup v26.4s, wzr\n"               \
+  "dup v27.4s, wzr\n"               \
+  "dup v28.4s, wzr\n"               \
+  "dup v29.4s, wzr\n"               \
+  "ld1 {v0.16b}, [c1], #16\n"       \
+  "dup v30.4s, wzr\n"               \
+  "dup v31.4s, wzr\n"               \
+  "mov w3, %w[run_depth]\n"         \
+  "ld1 {v1.16b}, [c1], #16\n"       \
+  "and v8.16b, v4.16b, v3.16b\n"    \
+  "and v9.16b, v5.16b, v3.16b\n"    \
+  "and v10.16b, v6.16b, v3.16b\n"   \
+  "and v11.16b, v7.16b, v3.16b\n"   \
+  "ushr v12.16b, v4.16b, #4\n"      \
+  "ushr v13.16b, v5.16b, #4\n"      \
+  "ushr v14.16b, v6.16b, #4\n"      \
+  "ushr v15.16b, v7.16b, #4\n"      \
+  "subs w3, w3, #1\n"               \
+  "b.ls " INNER_LOOP_END "f\n"      \
+                                    \
+      INNER_LOOP                    \
+  ":\n"                             \
+  "smull v4.8h, v12.8b, v0.8b\n"    \
+  "smull v5.8h, v13.8b, v0.8b\n"    \
+  "smull v6.8h, v14.8b, v0.8b\n"    \
+  "smull v7.8h, v15.8b, v0.8b\n"    \
+  "smlal2 v4.8h, v12.16b, v0.16b\n" \
+  "smlal2 v5.8h, v13.16b, v0.16b\n" \
+  "smlal2 v6.8h, v14.16b, v0.16b\n" \
+  "smlal2 v7.8h, v15.16b, v0.16b\n" \
+                                    \
+  "ld1 {v2.16b}, [c1], #16\n"       \
+                                    \
+  "smlal v4.8h, v8.8b, v1.8b\n"     \
+  "smlal v5.8h, v9.8b, v1.8b\n"     \
+  "smlal v6.8h, v10.8b, v1.8b\n"    \
+  "smlal v7.8h, v11.8b, v1.8b\n"    \
+  "smlal2 v4.8h, v8.16b, v1.16b\n"  \
+  "smlal2 v5.8h, v9.16b, v1.16b\n"  \
+  "smlal2 v6.8h, v10.16b, v1.16b\n" \
+  "smlal2 v7.8h, v11.16b, v1.16b\n" \
+                                    \
+  "ld1 {v0.16b}, [c1], #16\n"       \
+                                    \
+  "sadalp v16.4s, v4.8h\n"          \
+  "sadalp v17.4s, v5.8h\n"          \
+  "sadalp v18.4s, v6.8h\n"          \
+  "sadalp v19.4s, v7.8h\n"          \
+                                    \
+  "smull v4.8h, v12.8b, v2.8b\n"    \
+  "smull v5.8h, v13.8b, v2.8b\n"    \
+  "smull v6.8h, v14.8b, v2.8b\n"    \
+  "smull v7.8h, v15.8b, v2.8b\n"    \
+  "smlal2 v4.8h, v12.16b, v2.16b\n" \
+  "smlal2 v5.8h, v13.16b, v2.16b\n" \
+  "smlal2 v6.8h, v14.16b, v2.16b\n" \
+  "smlal2 v7.8h, v15.16b, v2.16b\n" \
+                                    \
+  "ld1 {v1.16b}, [c1], #16\n"       \
+                                    \
+  "smlal v4.8h, v8.8b, v0.8b\n"     \
+  "smlal v5.8h, v9.8b, v0.8b\n"     \
+  "smlal v6.8h, v10.8b, v0.8b\n"    \
+  "smlal v7.8h, v11.8b, v0.8b\n"    \
+  "smlal2 v4.8h, v8.16b, v0.16b\n"  \
+  "smlal2 v5.8h, v9.16b, v0.16b\n"  \
+  "smlal2 v6.8h, v10.16b, v0.16b\n" \
+  "smlal2 v7.8h, v11.16b, v0.16b\n" \
+                                    \
+  "ld1 {v2.16b}, [c1], #16\n"       \
+                                    \
+  "sadalp v20.4s, v4.8h\n"          \
+  "sadalp v21.4s, v5.8h\n"          \
+  "sadalp v22.4s, v6.8h\n"          \
+  "sadalp v23.4s, v7.8h\n"          \
+                                    \
+  "smull v4.8h, v12.8b, v1.8b\n"    \
+  "smull v5.8h, v13.8b, v1.8b\n"    \
+  "smull v6.8h, v14.8b, v1.8b\n"    \
+  "smull v7.8h, v15.8b, v1.8b\n"    \
+  "smlal2 v4.8h, v12.16b, v1.16b\n" \
+  "smlal2 v5.8h, v13.16b, v1.16b\n" \
+  "smlal2 v6.8h, v14.16b, v1.16b\n" \
+  "smlal2 v7.8h, v15.16b, v1.16b\n" \
+                                    \
+  "ld1 {v0.16b}, [c1], #16\n"       \
+                                    \
+  "smlal v4.8h, v8.8b, v2.8b\n"     \
+  "smlal v5.8h, v9.8b, v2.8b\n"     \
+  "smlal v6.8h, v10.8b, v2.8b\n"    \
+  "smlal v7.8h, v11.8b, v2.8b\n"    \
+  "smlal2 v4.8h, v8.16b, v2.16b\n"  \
+  "smlal2 v5.8h, v9.16b, v2.16b\n"  \
+  "smlal2 v6.8h, v10.16b, v2.16b\n" \
+  "smlal2 v7.8h, v11.16b, v2.16b\n" \
+                                    \
+  "ld1 {v1.16b}, [c1], #16\n"       \
+                                    \
+  "sadalp v24.4s, v4.8h\n"          \
+  "sadalp v25.4s, v5.8h\n"          \
+  "sadalp v26.4s, v6.8h\n"          \
+  "sadalp v27.4s, v7.8h\n"          \
+                                    \
+  "smull v4.8h, v12.8b, v0.8b\n"    \
+  "smull v5.8h, v13.8b, v0.8b\n"    \
+  "smull v6.8h, v14.8b, v0.8b\n"    \
+  "smull v7.8h, v15.8b, v0.8b\n"    \
+  "smlal2 v4.8h, v12.16b, v0.16b\n" \
+  "smlal2 v5.8h, v13.16b, v0.16b\n" \
+  "smlal2 v6.8h, v14.16b, v0.16b\n" \
+  "smlal2 v7.8h, v15.16b, v0.16b\n" \
+                                    \
+  "ld1 {v12.16b}, [c4], #16\n"      \
+                                    \
+  "smlal v4.8h, v8.8b, v1.8b\n"     \
+  "smlal v5.8h, v9.8b, v1.8b\n"     \
+  "smlal v6.8h, v10.8b, v1.8b\n"    \
+  "smlal v7.8h, v11.8b, v1.8b\n"    \
+                                    \
+  "ld1 {v13.16b}, [c4], #16\n"      \
+                                    \
+  "smlal2 v4.8h, v8.16b, v1.16b\n"  \
+  "smlal2 v5.8h, v9.16b, v1.16b\n"  \
+  "smlal2 v6.8h, v10.16b, v1.16b\n" \
+  "smlal2 v7.8h, v11.16b, v1.16b\n" \
+                                    \
+  "ld1 {v14.16b}, [c4], #16\n"      \
+                                    \
+  "sadalp v28.4s, v4.8h\n"          \
+  "sadalp v29.4s, v5.8h\n"          \
+  "sadalp v30.4s, v6.8h\n"          \
+  "sadalp v31.4s, v7.8h\n"          \
+                                    \
+  "ld1 {v15.16b}, [c4], #16\n"      \
+                                    \
+  "and v8.16b, v12.16b, v3.16b\n"   \
+  "and v9.16b, v13.16b, v3.16b\n"   \
+  "and v10.16b, v14.16b, v3.16b\n"  \
+                                    \
+  "ld1 {v0.16b}, [c1], #16\n"       \
+                                    \
+  "and v11.16b, v15.16b, v3.16b\n"  \
+  "ushr v12.16b, v12.16b, #4\n"     \
+  "ushr v13.16b, v13.16b, #4\n"     \
+                                    \
+  "ld1 {v1.16b}, [c1], #16\n"       \
+                                    \
+  "ushr v14.16b, v14.16b, #4\n"     \
+  "ushr v15.16b, v15.16b, #4\n"     \
+                                    \
+  "subs w3, w3, #1\n"               \
+  "b.hi " INNER_LOOP "b\n"          \
+                                    \
+      INNER_LOOP_END                \
+  ":\n"                             \
+  "smull v4.8h, v12.8b, v0.8b\n"    \
+  "smull v5.8h, v13.8b, v0.8b\n"    \
+  "smull v6.8h, v14.8b, v0.8b\n"    \
+  "smull v7.8h, v15.8b, v0.8b\n"    \
+  "smlal2 v4.8h, v12.16b, v0.16b\n" \
+  "smlal2 v5.8h, v13.16b, v0.16b\n" \
+  "smlal2 v6.8h, v14.16b, v0.16b\n" \
+  "smlal2 v7.8h, v15.16b, v0.16b\n" \
+                                    \
+  "ld1 {v2.16b}, [c1], #16\n"       \
+                                    \
+  "smlal v4.8h, v8.8b, v1.8b\n"     \
+  "smlal v5.8h, v9.8b, v1.8b\n"     \
+  "smlal v6.8h, v10.8b, v1.8b\n"    \
+  "smlal v7.8h, v11.8b, v1.8b\n"    \
+  "smlal2 v4.8h, v8.16b, v1.16b\n"  \
+  "smlal2 v5.8h, v9.16b, v1.16b\n"  \
+  "smlal2 v6.8h, v10.16b, v1.16b\n" \
+  "smlal2 v7.8h, v11.16b, v1.16b\n" \
+                                    \
+  "ld1 {v0.16b}, [c1], #16\n"       \
+                                    \
+  "sadalp v16.4s, v4.8h\n"          \
+  "sadalp v17.4s, v5.8h\n"          \
+  "sadalp v18.4s, v6.8h\n"          \
+  "sadalp v19.4s, v7.8h\n"          \
+                                    \
+  "smull v4.8h, v12.8b, v2.8b\n"    \
+  "smull v5.8h, v13.8b, v2.8b\n"    \
+  "smull v6.8h, v14.8b, v2.8b\n"    \
+  "smull v7.8h, v15.8b, v2.8b\n"    \
+  "smlal2 v4.8h, v12.16b, v2.16b\n" \
+  "smlal2 v5.8h, v13.16b, v2.16b\n" \
+  "smlal2 v6.8h, v14.16b, v2.16b\n" \
+  "smlal2 v7.8h, v15.16b, v2.16b\n" \
+                                    \
+  "ld1 {v1.16b}, [c1], #16\n"       \
+                                    \
+  "smlal v4.8h, v8.8b, v0.8b\n"     \
+  "smlal v5.8h, v9.8b, v0.8b\n"     \
+  "smlal v6.8h, v10.8b, v0.8b\n"    \
+  "smlal v7.8h, v11.8b, v0.8b\n"    \
+  "smlal2 v4.8h, v8.16b, v0.16b\n"  \
+  "smlal2 v5.8h, v9.16b, v0.16b\n"  \
+  "smlal2 v6.8h, v10.16b, v0.16b\n" \
+  "smlal2 v7.8h, v11.16b, v0.16b\n" \
+                                    \
+  "ld1 {v2.16b}, [c1], #16\n"       \
+                                    \
+  "sadalp v20.4s, v4.8h\n"          \
+  "sadalp v21.4s, v5.8h\n"          \
+  "sadalp v22.4s, v6.8h\n"          \
+  "sadalp v23.4s, v7.8h\n"          \
+                                    \
+  "smull v4.8h, v12.8b, v1.8b\n"    \
+  "smull v5.8h, v13.8b, v1.8b\n"    \
+  "smull v6.8h, v14.8b, v1.8b\n"    \
+  "smull v7.8h, v15.8b, v1.8b\n"    \
+  "smlal2 v4.8h, v12.16b, v1.16b\n" \
+  "smlal2 v5.8h, v13.16b, v1.16b\n" \
+  "smlal2 v6.8h, v14.16b, v1.16b\n" \
+  "smlal2 v7.8h, v15.16b, v1.16b\n" \
+                                    \
+  "ld1 {v0.16b}, [c1], #16\n"       \
+                                    \
+  "smlal v4.8h, v8.8b, v2.8b\n"     \
+  "smlal v5.8h, v9.8b, v2.8b\n"     \
+  "smlal v6.8h, v10.8b, v2.8b\n"    \
+  "smlal v7.8h, v11.8b, v2.8b\n"    \
+  "smlal2 v4.8h, v8.16b, v2.16b\n"  \
+  "smlal2 v5.8h, v9.16b, v2.16b\n"  \
+  "smlal2 v6.8h, v10.16b, v2.16b\n" \
+  "smlal2 v7.8h, v11.16b, v2.16b\n" \
+                                    \
+  "ld1 {v1.16b}, [c1], #16\n"       \
+                                    \
+  "sadalp v24.4s, v4.8h\n"          \
+  "sadalp v25.4s, v5.8h\n"          \
+  "sadalp v26.4s, v6.8h\n"          \
+  "sadalp v27.4s, v7.8h\n"          \
+                                    \
+  "smull v4.8h, v12.8b, v0.8b\n"    \
+  "smull v5.8h, v13.8b, v0.8b\n"    \
+  "smull v6.8h, v14.8b, v0.8b\n"    \
+  "smull v7.8h, v15.8b, v0.8b\n"    \
+  "smlal2 v4.8h, v12.16b, v0.16b\n" \
+  "smlal2 v5.8h, v13.16b, v0.16b\n" \
+  "smlal2 v6.8h, v14.16b, v0.16b\n" \
+  "smlal2 v7.8h, v15.16b, v0.16b\n" \
+                                    \
+  "smlal v4.8h, v8.8b, v1.8b\n"     \
+  "smlal v5.8h, v9.8b, v1.8b\n"     \
+  "smlal v6.8h, v10.8b, v1.8b\n"    \
+  "smlal v7.8h, v11.8b, v1.8b\n"    \
+  "smlal2 v4.8h, v8.16b, v1.16b\n"  \
+  "smlal2 v5.8h, v9.16b, v1.16b\n"  \
+  "smlal2 v6.8h, v10.16b, v1.16b\n" \
+  "smlal2 v7.8h, v11.16b, v1.16b\n" \
+                                    \
+  "sadalp v28.4s, v4.8h\n"          \
+  "sadalp v29.4s, v5.8h\n"          \
+  "sadalp v30.4s, v6.8h\n"          \
+  "sadalp v31.4s, v7.8h\n"          \
+                                    \
+  "addp v14.4s, v16.4s, v17.4s\n"   \
+  "addp v15.4s, v18.4s, v19.4s\n"   \
+  "addp v12.4s, v20.4s, v21.4s\n"   \
+  "addp v13.4s, v22.4s, v23.4s\n"   \
+  "addp v10.4s, v24.4s, v25.4s\n"   \
+  "addp v11.4s, v26.4s, v27.4s\n"   \
+  "addp v8.4s, v28.4s, v29.4s\n"    \
+  "addp v9.4s, v30.4s, v31.4s\n"    \
+  "addp v4.4s, v14.4s, v15.4s\n"    \
+  "addp v5.4s, v12.4s, v13.4s\n"    \
+  "addp v6.4s, v10.4s, v11.4s\n"    \
+  "addp v7.4s, v8.4s, v9.4s\n"      \
+  "st1 {v4.4s, v5.4s, v6.4s, v7.4s}, [c0], #64\n"
+#else    // __CHERI_PURE_CAPABILITY__
 #define KERNEL_4x4                  \
   "dup v3.16b, %w[bit_shift]\n"     \
   "mov x0, %[element_ptr]\n"        \
@@ -587,6 +1144,7 @@ namespace optimized_4bit {
   "addp v6.4s, v10.4s, v11.4s\n"    \
   "addp v7.4s, v8.4s, v9.4s\n"      \
   "st1 {v4.4s, v5.4s, v6.4s, v7.4s}, [x0], #64\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
 template <int RowsLeft, int RowsRight, int Cols>
 void NeonRunKernelNoSDot(const uint8_t* lhs, const int8_t* rhs, int32_t* dst,
