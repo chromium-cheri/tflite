@@ -2392,13 +2392,13 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
           "ld1 {v9.8b}, [c12], %[input_depth]\n"
 #else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v9.8b}, [x12], %[input_depth]\n"
-#else   // !__CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v25.4s, v4.8h, v13.8h\n"
 #if defined(__CHERI_PURE_CAPABILITY__)
           "ld1 {v10.8b}, [c12], %[input_depth]\n"
 #else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v10.8b}, [x12], %[input_depth]\n"
-#else   // !__CHERI_PURE_CAPABILITY__
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v24.4s, v5.4h, v14.4h\n"
 #if defined(__CHERI_PURE_CAPABILITY__)
           "ld1 {v11.8b}, [c12], %[input_depth]\n"
