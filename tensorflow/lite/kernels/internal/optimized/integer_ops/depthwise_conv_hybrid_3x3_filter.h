@@ -2549,7 +2549,7 @@ struct DepthwiseConvHybridWindowPerChannel<DepthwiseConvOutputRounding::kUpward,
         "smlal2 v25.4s, v1.8h, v10.8h\n"
 #if defined(__CHERI_PURE_CAPABILITY__)
         "ld1 {v23.8b}, [c15]\n"
-#endif  // !__CHERI_PURE_CAPABILITY__
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v23.8b}, [x15]\n"
 #endif  // !__CHERI_PURE_CAPABILITY__
         "smlal v24.4s, v2.4h, v11.4h\n"
