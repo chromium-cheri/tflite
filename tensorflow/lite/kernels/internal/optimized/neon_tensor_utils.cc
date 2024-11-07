@@ -428,7 +428,13 @@ static void DotprodMatrixBatchFourVectorMultiplyAccumulate(
           "ld2 {v9.s, v10.s}[3], [%[result_ptr]], %[wide_rows]\n"
 
           // Go back to the starting position (subtract wide_rows * 4).
+#if defined(__CHERI_PURE_CAPABILITY__)
+	  "gcvalue x0, %[result_ptr]\n"
+          "sub x0, x0, %[wide_rows], lsl #2\n"
+	  "scvalue %[result_ptr], %[result_ptr], x0\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "sub %[result_ptr], %[result_ptr], %[wide_rows], lsl #2\n"
+#endif  // !__CHERI_PURE_CAPABILITY__
 
           // Add previous result values.
           "fadd v9.4s, v9.4s, v0.4s\n"

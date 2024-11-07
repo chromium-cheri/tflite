@@ -1065,7 +1065,7 @@ struct gemm_pack_rhs<
   typedef SubMapper DataMapper;
   typedef typename packet_traits<Scalar>::type Packet;
 
-  EIGEN_STATIC_ASSERT((nr == 4), YOU_MADE_A_PROGRAMMING_MISTAKE)
+  EIGEN_STATIC_ASSERT((nr == 8), YOU_MADE_A_PROGRAMMING_MISTAKE)
 
   EIGEN_DEVICE_FUNC
   EIGEN_DONT_INLINE void operator()(Scalar* block, const DataMapper& rhs,
@@ -1272,7 +1272,7 @@ struct gemm_pack_rhs<
   typedef SubMapper DataMapper;
   typedef typename packet_traits<Scalar>::type Packet;
 
-  EIGEN_STATIC_ASSERT((nr == 4), YOU_MADE_A_PROGRAMMING_MISTAKE)
+  EIGEN_STATIC_ASSERT((nr == 8), YOU_MADE_A_PROGRAMMING_MISTAKE)
 
   EIGEN_DEVICE_FUNC
   EIGEN_DONT_INLINE void operator()(Scalar* block, const DataMapper& rhs,
@@ -1487,7 +1487,7 @@ struct gemm_pack_rhs<
       SubMapper;
   typedef SubMapper DataMapper;
 
-  EIGEN_STATIC_ASSERT((nr == 4), YOU_MADE_A_PROGRAMMING_MISTAKE)
+  EIGEN_STATIC_ASSERT((nr == 8), YOU_MADE_A_PROGRAMMING_MISTAKE)
 
   EIGEN_DEVICE_FUNC
   EIGEN_DONT_INLINE void operator()(Scalar* block, const DataMapper& rhs,
