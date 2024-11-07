@@ -197,7 +197,11 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
         "dup v29.8h, w2\n"
         "ldr w4, [%[params_ptr], #" STR(OFFSET_OUTPUT_ACTIVATION_MIN) "]\n"
         "ldr w0, [%[params_ptr], #" STR(OFFSET_OUTPUT_ACTIVATION_MAX) "]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "add c10, %[bias_ptr], #16\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "add x10, %[bias_ptr], #16\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "ldr x1, [%[params_ptr], #" STR(OFFSET_OUTPUT_ROW_SIZE) "]\n"
         "dup v25.16b, w4\n"
 
@@ -232,6 +236,23 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
           // This loop processes 2x2 outputs. To avoid register exhaustion,
           // inputs for the left 2 outputs are loaded first, then the right
           // two outputs.
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "mov c11, %[input_ptr]\n"
+          "mov c12, c11\n"
+          "ld1 {v9.8b}, [c12], %[input_depth]\n"
+          "add c13, c11, %[input_row_size]\n"
+          "ld1 {v10.8b}, [c12], %[input_depth]\n"
+          "add c14, c13, %[input_row_size]\n"
+          "ld1 {v11.8b}, [c12], %[input_depth]\n"
+          "add c15, c14, %[input_row_size]\n"
+          "ld1 {v12.8b}, [c13], %[input_depth]\n"
+          "mov w5, %w[output_window_width]\n"
+          "ld1 {v13.8b}, [c13], %[input_depth]\n"
+          "mov c6, %[output_ptr]\n"
+          "ld1 {v14.8b}, [c13], %[input_depth]\n"
+          "add c7, %[output_ptr], x1\n"
+          "ld1 {v15.8b}, [c14], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "mov x11, %[input_ptr]\n"
           "mov x12, x11\n"
           "ld1 {v9.8b}, [x12], %[input_depth]\n"
@@ -245,8 +266,9 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
           "ld1 {v13.8b}, [x13], %[input_depth]\n"
           "mov x6, %[output_ptr]\n"
           "ld1 {v14.8b}, [x13], %[input_depth]\n"
-          "add x7, %[output_ptr], x1\n"
+          "add c7, %[output_ptr], c1\n"
           "ld1 {v15.8b}, [x14], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           // The height 2 / width 2 loop loads an extra 2x1 outputs (2 height,
           // 1 width) in anticipation for the next iteration. Make sure
           // |output_window_width| is large enough to handle the additional
@@ -254,23 +276,51 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
           // smaller widths.
           "cmp w5, #2\n"
           "saddw v9.8h, v26.8h, v9.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v16.8b}, [c14], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v16.8b}, [x14], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v10.8h, v26.8h, v10.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v17.8b}, [c14], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v17.8b}, [x14], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v11.8h, v26.8h, v11.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v18.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v18.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v12.8h, v26.8h, v12.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v19.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v19.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v13.8h, v26.8h, v13.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v20.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v20.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v14.8h, v26.8h, v14.8b\n"
           "ld1 {v21.4s}, [%[bias_ptr]]\n"
           "saddw v15.8h, v26.8h, v15.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v22.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v22.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v16.8h, v26.8h, v16.8b\n"
           "ld1 {v23.4s}, [%[bias_ptr]]\n"
           "saddw v17.8h, v26.8h, v17.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v24.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v24.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v18.8h, v26.8h, v18.8b\n"
           "saddw v19.8h, v26.8h, v19.8b\n"
           "saddw v20.8h, v26.8h, v20.8b\n"
@@ -287,7 +337,11 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
             "smlal2 v22.4s, v0.8h, v9.8h\n"
             "cmp w5, #3\n"
             "smlal v23.4s, v0.4h, v12.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v9.8b}, [c12]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v9.8b}, [x12]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal2 v24.4s, v0.8h, v12.8h\n"
             "smlal v21.4s, v1.4h, v10.4h\n"
             "smlal2 v22.4s, v1.8h, v10.8h\n"
@@ -299,7 +353,11 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
             "smlal2 v24.4s, v2.8h, v14.8h\n"
             "smlal v21.4s, v3.4h, v12.4h\n"
             "smlal2 v22.4s, v3.8h, v12.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v12.8b}, [c13]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v12.8b}, [x13]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v3.4h, v15.4h\n"
             "smlal2 v24.4s, v3.8h, v15.8h\n"
             "smlal v21.4s, v4.4h, v13.4h\n"
@@ -312,10 +370,18 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
             "smlal2 v24.4s, v5.8h, v17.8h\n"
             "smlal v21.4s, v6.4h, v15.4h\n"
             "smlal2 v22.4s, v6.8h, v15.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v15.8b}, [c14]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v15.8b}, [x14]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v6.4h, v18.4h\n"
             "smlal2 v24.4s, v6.8h, v18.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v18.8b}, [c15]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v18.8b}, [x15]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v21.4s, v7.4h, v16.4h\n"
             "smlal2 v22.4s, v7.8h, v16.8h\n"
             "smlal v23.4s, v7.4h, v19.4h\n"
@@ -342,15 +408,31 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
             "sqxtn v21.8b, v21.8h\n"
             "sqxtn2 v21.16b, v23.8h\n"
             "dup v24.16b, w0\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v22.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v22.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smax v21.16b, v21.16b, v25.16b\n"
             "smin v21.16b, v21.16b, v24.16b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v24.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v24.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "saddw v9.8h, v26.8h, v9.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "st1 {v21.8b}, [c6], x3\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "st1 {v21.8b}, [x6], x3\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "saddw v12.8h, v26.8h, v12.8b\n"
             "mov v23.d[0], v21.d[1]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "st1 {v23.8b}, [c7], x3\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "st1 {v23.8b}, [x7], x3\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "saddw v15.8h, v26.8h, v15.8b\n"
             "ld1 {v21.4s}, [%[bias_ptr]]\n"
             "saddw v18.8h, v26.8h, v18.8b\n"
@@ -358,9 +440,17 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
 
             // Mul-add right outputs.
             "smlal v21.4s, v0.4h, v10.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "add c11, c11, %[input_width_increment]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "add x11, x11, %[input_width_increment]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal2 v22.4s, v0.8h, v10.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "mov c12, c11\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "mov x12, x11\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v0.4h, v13.4h\n"
             "add x13, x11, %[input_row_size]\n"
             "smlal2 v24.4s, v0.8h, v13.8h\n"
@@ -372,11 +462,23 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
             "smlal2 v24.4s, v1.8h, v14.8h\n"
             "smlal v21.4s, v2.4h, v9.4h\n"
             "smlal2 v22.4s, v2.8h, v9.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v9.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v9.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v2.4h, v12.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v10.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v10.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal2 v24.4s, v2.8h, v12.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v11.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v11.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v21.4s, v3.4h, v13.4h\n"
             "smlal2 v22.4s, v3.8h, v13.8h\n"
             "smlal v23.4s, v3.4h, v16.4h\n"
@@ -387,11 +489,23 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
             "smlal2 v24.4s, v4.8h, v17.8h\n"
             "smlal v21.4s, v5.4h, v12.4h\n"
             "smlal2 v22.4s, v5.8h, v12.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v12.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v12.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v5.4h, v15.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v13.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v13.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal2 v24.4s, v5.8h, v15.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v14.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v14.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v21.4s, v6.4h, v16.4h\n"
             "smlal2 v22.4s, v6.8h, v16.8h\n"
             "smlal v23.4s, v6.4h, v19.4h\n"
@@ -402,18 +516,42 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
             "smlal2 v24.4s, v7.8h, v20.8h\n"
             "smlal v21.4s, v8.4h, v15.4h\n"
             "smlal2 v22.4s, v8.8h, v15.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v15.8b}, [c14], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v15.8b}, [x14], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v8.4h, v18.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v16.8b}, [c14], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v16.8b}, [x14], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal2 v24.4s, v8.8h, v18.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v17.8b}, [c14], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v17.8b}, [x14], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
             "sqrdmulh v21.4s, v21.4s, v27.4s\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v18.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v18.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "sqrdmulh v22.4s, v22.4s, v28.4s\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v19.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v19.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "sqrdmulh v23.4s, v23.4s, v27.4s\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v20.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v20.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "sqrdmulh v24.4s, v24.4s, v28.4s\n"
             "sqrshl v21.4s, v21.4s, v30.4s\n"
             "sqrshl v22.4s, v22.4s, v31.4s\n"
@@ -428,15 +566,31 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
             "sqxtn v21.8b, v21.8h\n"
             "sqxtn2 v21.16b, v23.8h\n"
             "dup v24.16b, w0\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v22.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v22.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smax v21.16b, v21.16b, v25.16b\n"
             "smin v21.16b, v21.16b, v24.16b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v24.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v24.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "saddw v9.8h, v26.8h, v9.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "st1 {v21.8b}, [c6], x3\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "st1 {v21.8b}, [x6], x3\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "saddw v10.8h, v26.8h, v10.8b\n"
             "mov v23.d[0], v21.d[1]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "st1 {v23.8b}, [c7], x3\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "st1 {v23.8b}, [x7], x3\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "saddw v11.8h, v26.8h, v11.8b\n"
             "saddw v12.8h, v26.8h, v12.8b\n"
             "saddw v13.8h, v26.8h, v13.8b\n"
@@ -463,7 +617,11 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
           "smlal v21.4s, v0.4h, v9.4h\n"
           "smlal2 v22.4s, v0.8h, v9.8h\n"
           "smlal v23.4s, v0.4h, v12.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v9.8b}, [c12]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v9.8b}, [x12]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v24.4s, v0.8h, v12.8h\n"
           "smlal v21.4s, v1.4h, v10.4h\n"
           "smlal2 v22.4s, v1.8h, v10.8h\n"
@@ -475,7 +633,11 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
           "smlal2 v24.4s, v2.8h, v14.8h\n"
           "smlal v21.4s, v3.4h, v12.4h\n"
           "smlal2 v22.4s, v3.8h, v12.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v12.8b}, [c13]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v12.8b}, [x13]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v3.4h, v15.4h\n"
           "smlal2 v24.4s, v3.8h, v15.8h\n"
           "smlal v21.4s, v4.4h, v13.4h\n"
@@ -488,10 +650,18 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
           "smlal2 v24.4s, v5.8h, v17.8h\n"
           "smlal v21.4s, v6.4h, v15.4h\n"
           "smlal2 v22.4s, v6.8h, v15.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v15.8b}, [c14]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v15.8b}, [x14]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v6.4h, v18.4h\n"
           "smlal2 v24.4s, v6.8h, v18.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v18.8b}, [c15]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v18.8b}, [x15]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v21.4s, v7.4h, v16.4h\n"
           "smlal2 v22.4s, v7.8h, v16.8h\n"
           "smlal v23.4s, v7.4h, v19.4h\n"
@@ -518,15 +688,31 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
           "sqxtn v21.8b, v21.8h\n"
           "sqxtn2 v21.16b, v23.8h\n"
           "dup v24.16b, w0\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v22.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v22.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smax v21.16b, v21.16b, v25.16b\n"
           "smin v21.16b, v21.16b, v24.16b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v24.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v24.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v9.8h, v26.8h, v9.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "st1 {v21.8b}, [c6], x3\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "st1 {v21.8b}, [x6], x3\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "mov v23.d[0], v21.d[1]\n"
           "saddw v12.8h, v26.8h, v12.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "st1 {v23.8b}, [c7], x3\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "st1 {v23.8b}, [x7], x3\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v15.8h, v26.8h, v15.8b\n"
           "ld1 {v21.4s}, [%[bias_ptr]]\n"
           "saddw v18.8h, v26.8h, v18.8b\n"
@@ -590,9 +776,17 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
           "dup v24.16b, w0\n"
           "smax v21.16b, v21.16b, v25.16b\n"
           "smin v21.16b, v21.16b, v24.16b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "st1 {v21.8b}, [c6], x3\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "st1 {v21.8b}, [x6], x3\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "mov v23.d[0], v21.d[1]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "st1 {v23.8b}, [c7], x3\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "st1 {v23.8b}, [x7], x3\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "b " DEPTHWISECONV_LABEL_HEIGHT_2_WIDTH_2_AFTER_LOOP "f\n"
 
           DEPTHWISECONV_LABEL_HEIGHT_2_WIDTH_1_LEFTOVER ":\n"
@@ -652,9 +846,17 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
           "dup v24.16b, w0\n"
           "smax v21.16b, v21.16b, v25.16b\n"
           "smin v21.16b, v21.16b, v24.16b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "st1 {v21.8b}, [c6], x3\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "st1 {v21.8b}, [x6], x3\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "mov v23.d[0], v21.d[1]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "st1 {v23.8b}, [c7], x3\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "st1 {v23.8b}, [x7], x3\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
           DEPTHWISECONV_LABEL_HEIGHT_2_WIDTH_2_AFTER_LOOP ":\n"
           "subs %w[output_window_height], %w[output_window_height], #2\n"
@@ -668,6 +870,21 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
         "blt " DEPTHWISECONV_LABEL_HEIGHT_1_END "f\n"
 
         DEPTHWISECONV_LABEL_HEIGHT_1 ":\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "mov c12, %[input_ptr]\n"
+        "ld1 {v9.8b}, [c12], %[input_depth]\n"
+        "add c13, %[input_ptr], %[input_row_size]\n"
+        "ld1 {v10.8b}, [c12], %[input_depth]\n"
+        "add c14, c13, %[input_row_size]\n"
+        "ld1 {v11.8b}, [c12], %[input_depth]\n"
+        "add c15, c14, %[input_row_size]\n"
+        "mov w5, %w[output_window_width]\n"
+        "ld1 {v13.8b}, [c13], %[input_depth]\n"
+        "mov c6, %[output_ptr]\n"
+        "ld1 {v14.8b}, [c13], %[input_depth]\n"
+        "add c7, %[output_ptr], x1\n"
+        "ld1 {v15.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "mov x12, %[input_ptr]\n"
         "ld1 {v9.8b}, [x12], %[input_depth]\n"
         "add x13, %[input_ptr], %[input_row_size]\n"
@@ -681,18 +898,33 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
         "ld1 {v14.8b}, [x13], %[input_depth]\n"
         "add x7, %[output_ptr], x1\n"
         "ld1 {v15.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         // The height 1 / width 2 loop loads an extra 1x1 output in anticipation
         // for the next iteration. Make sure |output_window_width| is large
         // enough to handle the additional load, otherwise jump to the
         // appropriate label to handle smaller widths.
         "cmp w5, #2\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v17.8b}, [c14], %[input_depth]\n"
+        "ld1 {v18.8b}, [c14], %[input_depth]\n"
+        "ld1 {v19.8b}, [c14], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v17.8b}, [x14], %[input_depth]\n"
         "ld1 {v18.8b}, [x14], %[input_depth]\n"
         "ld1 {v19.8b}, [x14], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "ld1 {v21.4s}, [%[bias_ptr]]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v22.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v22.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "ld1 {v23.4s}, [%[bias_ptr]]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v24.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v24.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
         "saddw v9.8h, v26.8h, v9.8b\n"
         "saddw v10.8h, v26.8h, v10.8b\n"
@@ -713,11 +945,23 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
           // Load inputs for 3x4 input window which corresponds to a 1x2 output
           // window.
           "smlal v21.4s, v0.4h, v9.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v12.8b}, [c12]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v12.8b}, [x12]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v22.4s, v0.8h, v9.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v16.8b}, [c13]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v16.8b}, [x13]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v0.4h, v10.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v20.8b}, [c14]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v20.8b}, [x14]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v24.4s, v0.8h, v10.8h\n"
           "subs w5, w5, #2\n"
           "smlal v21.4s, v1.4h, v10.4h\n"
@@ -727,47 +971,92 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
           "smlal v23.4s, v1.4h, v11.4h\n"
           "mov x12, %[input_ptr]\n"
           "smlal2 v24.4s, v1.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v9.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v9.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v21.4s, v2.4h, v11.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v10.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v10.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v12.8h, v26.8h, v12.8b\n"
           "smlal2 v22.4s, v2.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v11.8b}, [c12], %[input_depth]\n"
+          "add c13, %[input_ptr], %[input_row_size]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v11.8b}, [x12], %[input_depth]\n"
           "add x13, %[input_ptr], %[input_row_size]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v2.4h, v12.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "add c14, c13, %[input_row_size]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "add x14, x13, %[input_row_size]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v24.4s, v2.8h, v12.8h\n"
           "smlal v21.4s, v3.4h, v13.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "add c15, c14, %[input_row_size]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "add x15, x14, %[input_row_size]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v22.4s, v3.8h, v13.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v13.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v13.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v3.4h, v14.4h\n"
           "smlal2 v24.4s, v3.8h, v14.8h\n"
           "smlal v21.4s, v4.4h, v14.4h\n"
           "smlal2 v22.4s, v4.8h, v14.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v14.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v14.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v4.4h, v15.4h\n"
           "smlal2 v24.4s, v4.8h, v15.8h\n"
           "smlal v21.4s, v5.4h, v15.4h\n"
           "saddw v16.8h, v26.8h, v16.8b\n"
           "smlal2 v22.4s, v5.8h, v15.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v15.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v15.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v5.4h, v16.4h\n"
           "smlal2 v24.4s, v5.8h, v16.8h\n"
           "smlal v21.4s, v6.4h, v17.4h\n"
           "smlal2 v22.4s, v6.8h, v17.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v17.8b}, [c14], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v17.8b}, [x14], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v6.4h, v18.4h\n"
           "smlal2 v24.4s, v6.8h, v18.8h\n"
           "smlal v21.4s, v7.4h, v18.4h\n"
           "smlal2 v22.4s, v7.8h, v18.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v18.8b}, [c14], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v18.8b}, [x14], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v7.4h, v19.4h\n"
           "smlal2 v24.4s, v7.8h, v19.8h\n"
           "smlal v21.4s, v8.4h, v19.4h\n"
           "saddw v20.8h, v26.8h, v20.8b\n"
           "smlal2 v22.4s, v8.8h, v19.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v19.8b}, [c14], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v19.8b}, [x14], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v8.4h, v20.4h\n"
           "smlal2 v24.4s, v8.8h, v20.8h\n"
 
@@ -788,10 +1077,18 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
           "sqxtn v21.8b, v21.8h\n"
           "sqxtn2 v21.16b, v23.8h\n"
           "dup v24.16b, w0\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v22.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v22.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smax v21.16b, v21.16b, v25.16b\n"
           "smin v21.16b, v21.16b, v24.16b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v24.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v24.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v9.8h, v26.8h, v9.8b\n"
           "st1 {v21.8b}, [%[output_ptr]], x3\n"
           "saddw v10.8h, v26.8h, v10.8b\n"
@@ -820,11 +1117,23 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 1,
         // Handle last two horizontal outputs if exists.
         DEPTHWISECONV_LABEL_HEIGHT_1_WIDTH_2_LEFTOVER ":\n"
         "smlal v21.4s, v0.4h, v9.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v12.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v12.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "smlal2 v22.4s, v0.8h, v9.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v16.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v16.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "smlal v23.4s, v0.4h, v10.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v20.8b}, [c14], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v20.8b}, [x14], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "smlal2 v24.4s, v0.8h, v10.8h\n"
         "smlal v21.4s, v1.4h, v10.4h\n"
         "smlal2 v22.4s, v1.8h, v10.8h\n"
@@ -1057,7 +1366,11 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
         "ld1 {v30.4s, v31.4s}, [%[output_multiplier_ptr]]\n"
 
         // Load filters and add offsets.
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "add c10, %[bias_ptr], #16\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "add x10, %[bias_ptr], #16\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "ld1 {v0.8b}, [%[filter_ptr]], x5\n"
         "ld1 {v1.8b}, [%[filter_ptr]], x5\n"
         "sshll v0.8h, v0.8b, #0\n"
@@ -1083,18 +1396,42 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
         DEPTHWISECONV_LABEL_HEIGHT_2_LOOP ":\n"
           // Load the first two rows of the 5x5 input window, then reuse the
           // same registers to load subsequent rows as they become available.
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "mov c11, %[input_ptr]\n"
+          "mov c12, c11\n"
+          "add c13, c12, %[input_row_size]\n"
+          "ld1 {v9.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "mov x11, %[input_ptr]\n"
           "mov x12, x11\n"
           "add x13, x12, %[input_row_size]\n"
           "ld1 {v9.8b}, [x12], %[input_depth]\n"
           "mov w14, %w[output_window_width]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
+          "mov w14, %w[output_window_width]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v10.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v10.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           // The height 2 / width 2 loop loads an extra 1 output horizontally in
           // anticipation for the next iteration. Make sure
           // |output_window_width| is large enough to handle the additional
           // load, otherwise jump to the appropriate label to handle smaller
           // widths.
           "cmp w14, #2\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v11.8b}, [c12], %[input_depth]\n"
+          "add c15, c13, %[input_row_size]\n"
+          "ld1 {v14.8b}, [c13], %[input_depth]\n"
+          "mov c6, %[output_ptr]\n"
+          "ld1 {v15.8b}, [c13], %[input_depth]\n"
+          "add c7, %[output_ptr], c19\n"
+          "ld1 {v16.8b}, [c13], %[input_depth]\n"
+          "ld1 {v21.4s}, [%[bias_ptr]]\n"
+          "ld1 {v22.4s}, [c10]\n"
+          "ld1 {v23.4s}, [%[bias_ptr]]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v11.8b}, [x12], %[input_depth]\n"
           "add x15, x13, %[input_row_size]\n"
           "ld1 {v14.8b}, [x13], %[input_depth]\n"
@@ -1105,16 +1442,29 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
           "ld1 {v21.4s}, [%[bias_ptr]]\n"
           "ld1 {v22.4s}, [x10]\n"
           "ld1 {v23.4s}, [%[bias_ptr]]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v9.8h, v28.8h, v9.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v24.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v24.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v10.8h, v28.8h, v10.8b\n"
           "ld1 {v19.4s}, [%[bias_ptr]]\n"
           "saddw v11.8h, v28.8h, v11.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v20.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v20.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v14.8h, v28.8h, v14.8b\n"
           "ld1 {v25.4s}, [%[bias_ptr]]\n"
           "saddw v15.8h, v28.8h, v15.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v26.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v26.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v16.8h, v28.8h, v16.8b\n"
 
           "beq " DEPTHWISECONV_LABEL_HEIGHT_2_WIDTH_2_LEFTOVER "f\n"
@@ -1124,25 +1474,59 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
           //"loop_%=:\n"
           DEPTHWISECONV_LABEL_HEIGHT_2_WIDTH_2_LOOP ":\n"
             "smlal v21.4s, v0.4h, v9.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v12.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v12.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal2 v22.4s, v0.8h, v9.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v13.8b}, [c12]\n"
+            "add c12, c15, %[input_row_size]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v13.8b}, [x12]\n"
             "add x12, x15, %[input_row_size]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v0.4h, v11.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v17.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v17.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal2 v24.4s, v0.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v18.8b}, [c13]\n"
+            "add c13, c12, %[input_row_size]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v18.8b}, [x13]\n"
             "add x13, x12, %[input_row_size]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v21.4s, v1.4h, v10.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v9.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v9.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal2 v22.4s, v1.8h, v10.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v10.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v10.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v21.4s, v2.4h, v11.4h\n"
             "smlal2 v22.4s, v2.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v11.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v11.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v21.4s, v3.4h, v14.4h\n"
             "smlal2 v22.4s, v3.8h, v14.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v14.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v14.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v3.4h, v16.4h\n"
             "subs w14, w14, #2\n"
             "smlal2 v24.4s, v3.8h, v16.8h\n"
@@ -1150,34 +1534,62 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
             "smlal v21.4s, v4.4h, v15.4h\n"
             "saddw v12.8h, v28.8h, v12.8b\n"
             "smlal2 v22.4s, v4.8h, v15.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v15.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v15.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v21.4s, v5.4h, v16.4h\n"
             "saddw v13.8h, v28.8h, v13.8b\n"
             "smlal2 v22.4s, v5.8h, v16.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v16.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v16.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v1.4h, v12.4h\n"
             "saddw v17.8h, v28.8h, v17.8b\n"
             "smlal2 v24.4s, v1.8h, v12.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v12.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v12.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v2.4h, v13.4h\n"
             "saddw v18.8h, v28.8h, v18.8b\n"
             "smlal2 v24.4s, v2.8h, v13.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
             "ld1 {v13.8b}, [x15]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
+            "ld1 {v13.8b}, [x15]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v4.4h, v17.4h\n"
             "saddw v9.8h, v28.8h, v9.8b\n"
             "smlal2 v24.4s, v4.8h, v17.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v17.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v17.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v5.4h, v18.4h\n"
             "saddw v10.8h, v28.8h, v10.8b\n"
             "smlal2 v24.4s, v5.8h, v18.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v18.8b}, [c12]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v18.8b}, [x12]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
             "smlal v21.4s, v6.4h, v9.4h\n"
             "smlal2 v22.4s, v6.8h, v9.8h\n"
             "smlal v19.4s, v0.4h, v9.4h\n"
             "saddw v11.8h, v28.8h, v11.8b\n"
             "smlal2 v20.4s, v0.8h, v9.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v9.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v9.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v6.4h, v11.4h\n"
             "smlal2 v24.4s, v6.8h, v11.8h\n"
             "smlal v21.4s, v7.4h, v10.4h\n"
@@ -1185,29 +1597,55 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
             "saddw v12.8h, v28.8h, v12.8b\n"
             "smlal v19.4s, v1.4h, v10.4h\n"
             "smlal2 v20.4s, v1.8h, v10.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v10.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v10.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v7.4h, v12.4h\n"
             "smlal2 v24.4s, v7.8h, v12.8h\n"
             "smlal v25.4s, v1.4h, v12.4h\n"
             "smlal2 v26.4s, v1.8h, v12.8h\n"
             "smlal v21.4s, v8.4h, v11.4h\n"
             "smlal2 v22.4s, v8.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "add c11, c11, %[input_width_increment]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "add x11, x11, %[input_width_increment]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v19.4s, v2.4h, v11.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "mov c12, c11\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "mov x12, x11\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal2 v20.4s, v2.8h, v11.8h\n"
             "saddw v13.8h, v28.8h, v13.8b\n"
             "smlal v25.4s, v0.4h, v11.4h\n"
             "smlal2 v26.4s, v0.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v11.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v11.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v23.4s, v8.4h, v13.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v12.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v12.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal2 v24.4s, v8.8h, v13.8h\n"
             "smlal v25.4s, v2.4h, v13.4h\n"
             "smlal2 v26.4s, v2.8h, v13.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v13.8b}, [c13]\n"
+            "add c13, c12, %[input_row_size]\n"
+            "add c15, c13, %[input_row_size]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v13.8b}, [x13]\n"
             "add x13, x12, %[input_row_size]\n"
             "add x15, x13, %[input_row_size]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
             "ld1 {v27.4s, v28.4s}, [%[output_shift_ptr]]\n"
             "sqrdmulh v21.4s, v21.4s, v30.4s\n"
@@ -1229,33 +1667,61 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
             "sqxtn2 v21.16b, v23.8h\n"
             "dup v27.16b, w3\n"
             "dup v29.16b, w4\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v22.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v22.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smax v21.16b, v21.16b, v27.16b\n"
             "smin v21.16b, v21.16b, v29.16b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v24.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v24.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "dup v29.8h, w2\n"
             "saddw v9.8h, v28.8h, v9.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "st1 {v21.8b}, [c6], x5\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "st1 {v21.8b}, [x6], x5\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "saddw v10.8h, v28.8h, v10.8b\n"
             "mov v23.d[0], v21.d[1]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "st1 {v23.8b}, [c6], x5\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "st1 {v23.8b}, [x6], x5\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "saddw v11.8h, v28.8h, v11.8b\n"
 
             "smlal v19.4s, v6.4h, v9.4h\n"
             "smlal2 v20.4s, v6.8h, v9.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v9.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v9.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v25.4s, v6.4h, v11.4h\n"
             "smlal2 v26.4s, v6.8h, v11.8h\n"
             "smlal v19.4s, v7.4h, v10.4h\n"
             "saddw v12.8h, v28.8h, v12.8b\n"
             "smlal2 v20.4s, v7.8h, v10.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v10.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v10.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v25.4s, v7.4h, v12.4h\n"
             "smlal2 v26.4s, v7.8h, v12.8h\n"
             "smlal v19.4s, v8.4h, v11.4h\n"
             "saddw v13.8h, v28.8h, v13.8b\n"
             "smlal2 v20.4s, v8.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v11.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v11.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v25.4s, v8.4h, v13.4h\n"
             "saddw v14.8h, v28.8h, v14.8b\n"
             "smlal2 v26.4s, v8.8h, v13.8h\n"
@@ -1263,7 +1729,11 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
             "smlal v19.4s, v3.4h, v14.4h\n"
             "saddw v15.8h, v28.8h, v15.8b\n"
             "smlal2 v20.4s, v3.8h, v14.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v14.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v14.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v25.4s, v3.4h, v16.4h\n"
             "ld1 {v21.4s}, [%[bias_ptr]]\n"
             "smlal2 v26.4s, v3.8h, v16.8h\n"
@@ -1271,13 +1741,21 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
             "smlal v19.4s, v4.4h, v15.4h\n"
             "saddw v17.8h, v28.8h, v17.8b\n"
             "smlal2 v20.4s, v4.8h, v15.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v15.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v15.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v25.4s, v4.4h, v17.4h\n"
             "smlal2 v26.4s, v4.8h, v17.8h\n"
             "smlal v19.4s, v5.4h, v16.4h\n"
             "saddw v18.8h, v28.8h, v18.8b\n"
             "smlal2 v20.4s, v5.8h, v16.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v16.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v16.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smlal v25.4s, v5.4h, v18.4h\n"
             "smlal2 v26.4s, v5.8h, v18.8h\n"
 
@@ -1301,16 +1779,32 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
             "sqxtn2 v19.16b, v25.8h\n"
             "dup v27.16b, w3\n"
             "dup v29.16b, w4\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v20.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v20.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "smax v19.16b, v19.16b, v27.16b\n"
             "smin v19.16b, v19.16b, v29.16b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "ld1 {v26.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "ld1 {v26.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "dup v29.8h, w2\n"
             "saddw v9.8h, v28.8h, v9.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "st1 {v19.8b}, [c7], x5\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "st1 {v19.8b}, [x7], x5\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "saddw v10.8h, v28.8h, v10.8b\n"
             "mov v25.d[0], v19.d[1]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+            "st1 {v25.8b}, [c7], x5\n"
+#else   // !__CHERI_PURE_CAPABILITY__
             "st1 {v25.8b}, [x7], x5\n"
+#endif  // __CHERI_PURE_CAPABILITY__
             "saddw v11.8h, v28.8h, v11.8b\n"
             "ld1 {v19.4s}, [%[bias_ptr]]\n"
             "saddw v14.8h, v28.8h, v14.8b\n"
@@ -1328,58 +1822,120 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
           // Handle last 2 columns if exists.
           DEPTHWISECONV_LABEL_HEIGHT_2_WIDTH_2_LEFTOVER ":\n"
           "smlal v21.4s, v0.4h, v9.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v12.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v12.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v22.4s, v0.8h, v9.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v13.8b}, [c12]\n"
+          "add c12, c15, %[input_row_size]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v13.8b}, [x12]\n"
           "add x12, x15, %[input_row_size]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v0.4h, v11.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v17.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v17.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v24.4s, v0.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v18.8b}, [c13]\n"
+          "add c13, c12, %[input_row_size]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v18.8b}, [x13]\n"
           "add x13, x12, %[input_row_size]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v21.4s, v1.4h, v10.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v9.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v9.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v22.4s, v1.8h, v10.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v10.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v10.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v21.4s, v2.4h, v11.4h\n"
           "smlal2 v22.4s, v2.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v11.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v11.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v21.4s, v3.4h, v14.4h\n"
           "smlal2 v22.4s, v3.8h, v14.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v14.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v14.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v3.4h, v16.4h\n"
           "smlal2 v24.4s, v3.8h, v16.8h\n"
           "smlal v21.4s, v4.4h, v15.4h\n"
           "saddw v12.8h, v28.8h, v12.8b\n"
           "smlal2 v22.4s, v4.8h, v15.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v15.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v15.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v21.4s, v5.4h, v16.4h\n"
           "saddw v13.8h, v28.8h, v13.8b\n"
           "smlal2 v22.4s, v5.8h, v16.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v16.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v16.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v1.4h, v12.4h\n"
           "saddw v17.8h, v28.8h, v17.8b\n"
           "smlal2 v24.4s, v1.8h, v12.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v12.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v12.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v2.4h, v13.4h\n"
           "saddw v18.8h, v28.8h, v18.8b\n"
           "smlal2 v24.4s, v2.8h, v13.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v13.8b}, [c15]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v13.8b}, [x15]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v4.4h, v17.4h\n"
           "saddw v9.8h, v28.8h, v9.8b\n"
           "smlal2 v24.4s, v4.8h, v17.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v17.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v17.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v5.4h, v18.4h\n"
           "saddw v10.8h, v28.8h, v10.8b\n"
           "smlal2 v24.4s, v5.8h, v18.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v18.8b}, [c12]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v18.8b}, [x12]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
           "smlal v21.4s, v6.4h, v9.4h\n"
           "smlal2 v22.4s, v6.8h, v9.8h\n"
           "smlal v19.4s, v0.4h, v9.4h\n"
           "saddw v11.8h, v28.8h, v11.8b\n"
           "smlal2 v20.4s, v0.8h, v9.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v9.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v9.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v6.4h, v11.4h\n"
           "smlal2 v24.4s, v6.8h, v11.8h\n"
           "smlal v21.4s, v7.4h, v10.4h\n"
@@ -1387,7 +1943,11 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
           "saddw v12.8h, v28.8h, v12.8b\n"
           "smlal v19.4s, v1.4h, v10.4h\n"
           "smlal2 v20.4s, v1.8h, v10.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v10.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v10.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v7.4h, v12.4h\n"
           "smlal2 v24.4s, v7.8h, v12.8h\n"
           "smlal v25.4s, v1.4h, v12.4h\n"
@@ -1399,13 +1959,25 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
           "saddw v13.8h, v28.8h, v13.8b\n"
           "smlal v25.4s, v0.4h, v11.4h\n"
           "smlal2 v26.4s, v0.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v11.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v11.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v23.4s, v8.4h, v13.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v12.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v12.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v24.4s, v8.8h, v13.8h\n"
           "smlal v25.4s, v2.4h, v13.4h\n"
           "smlal2 v26.4s, v2.8h, v13.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v13.8b}, [c13]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v13.8b}, [x13]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
           "ld1 {v27.4s, v28.4s}, [%[output_shift_ptr]]\n"
           "sqrdmulh v21.4s, v21.4s, v30.4s\n"
@@ -1427,16 +1999,32 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
           "sqxtn2 v21.16b, v23.8h\n"
           "dup v27.16b, w3\n"
           "dup v29.16b, w4\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v22.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v22.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smax v21.16b, v21.16b, v27.16b\n"
           "smin v21.16b, v21.16b, v29.16b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v24.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v24.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "dup v29.8h, w2\n"
           "saddw v9.8h, v28.8h, v9.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "st1 {v21.8b}, [c6], x5\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "st1 {v21.8b}, [x6], x5\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v10.8h, v28.8h, v10.8b\n"
           "mov v23.d[0], v21.d[1]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "st1 {v23.8b}, [c6]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "st1 {v23.8b}, [x6]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v11.8h, v28.8h, v11.8b\n"
 
           "smlal v19.4s, v6.4h, v9.4h\n"
@@ -1493,10 +2081,18 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
           "sqxtn2 v19.16b, v25.8h\n"
           "smax v19.16b, v19.16b, v27.16b\n"
           "smin v19.16b, v19.16b, v29.16b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "st1 {v19.8b}, [c7], x5\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "st1 {v19.8b}, [x7], x5\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "dup v29.8h, w2\n"
           "mov v25.d[0], v19.d[1]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "st1 {v25.8b}, [c7]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "st1 {v25.8b}, [x7]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "b " DEPTHWISECONV_LABEL_HEIGHT_2_WIDTH_2_AFTER_LOOP "f\n"
 
           // Handle last column if exists.
@@ -1506,32 +2102,73 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
           // first two input rows of the top left output. Now load the last
           // input row for this output. Once these inputs are no longer needed,
           // load the input rows for the bottom left output.
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "add c12, c15, %[input_row_size]\n"
+          "add c13, c12, %[input_row_size]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "add x12, x15, %[input_row_size]\n"
           "add x13, x12, %[input_row_size]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v12.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v12.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v21.4s, v0.4h, v9.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v13.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v13.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v22.4s, v0.8h, v9.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v17.8b}, [c15]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v17.8b}, [x15]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v21.4s, v1.4h, v10.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v9.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v9.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v22.4s, v1.8h, v10.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v10.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v10.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v21.4s, v2.4h, v11.4h\n"
           "smlal2 v22.4s, v2.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v11.8b}, [c12]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v11.8b}, [x12]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v21.4s, v3.4h, v14.4h\n"
           "smlal2 v22.4s, v3.8h, v14.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v14.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v14.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v21.4s, v4.4h, v15.4h\n"
           "smlal2 v22.4s, v4.8h, v15.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v15.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v15.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v21.4s, v5.4h, v16.4h\n"
           "saddw v12.8h, v28.8h, v12.8b\n"
           "smlal2 v22.4s, v5.8h, v16.8h\n"
           "saddw v13.8h, v28.8h, v13.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v16.8b}, [c13]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v16.8b}, [x13]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
           "smlal v21.4s, v6.4h, v12.4h\n"
           "smlal2 v22.4s, v6.8h, v12.8h\n"
@@ -1561,7 +2198,11 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
           "smax v21.8b, v21.8b, v26.8b\n"
           "smin v21.8b, v21.8b, v27.8b\n"
           "saddw v9.8h, v28.8h, v9.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "st1 {v21.8b}, [c6]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "st1 {v21.8b}, [x6]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v10.8h, v28.8h, v10.8b\n"
 
           "smlal v23.4s, v3.4h, v9.4h\n"
@@ -1595,7 +2236,11 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
           "sqxtn v23.8b, v23.8h\n"
           "smax v23.8b, v23.8b, v26.8b\n"
           "smin v23.8b, v23.8b, v27.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "st1 {v23.8b}, [c7]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "st1 {v23.8b}, [x7]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
           DEPTHWISECONV_LABEL_HEIGHT_2_WIDTH_2_AFTER_LOOP ":\n"
           "subs %w[output_window_height], %w[output_window_height], #2\n"
@@ -1609,6 +2254,16 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
         "blt " DEPTHWISECONV_LABEL_HEIGHT_1_END "f\n"
 
         DEPTHWISECONV_LABEL_HEIGHT_1 ":\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "mov c11, %[input_ptr]\n"
+        "mov c12, c11\n"
+        "add c13, c12, %[input_row_size]\n"
+        "ld1 {v9.8b}, [c12], %[input_depth]\n"
+        "add c15, c13, %[input_row_size]\n"
+        "ld1 {v10.8b}, [c12], %[input_depth]\n"
+        "mov c6, %[output_ptr]\n"
+        "ld1 {v11.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "mov x11, %[input_ptr]\n"
         "mov x12, x11\n"
         "add x13, x12, %[input_row_size]\n"
@@ -1617,26 +2272,44 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
         "ld1 {v10.8b}, [x12], %[input_depth]\n"
         "mov x6, %[output_ptr]\n"
         "ld1 {v11.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "mov w14, %w[output_window_width]\n"
         // The height 1 / width 2 loop loads an extra 1x1 output in anticipation
         // for the next iteration. Make sure |output_window_width| is large
         // enough to handle the additional load, otherwise jump to the
         // appropriate label to handle smaller widths.
         "cmp w14, #2\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v12.8b}, [c13], %[input_depth]\n"
+        "ld1 {v13.8b}, [c13], %[input_depth]\n"
+        "ld1 {v14.8b}, [c13], %[input_depth]\n"
+        "ld1 {v15.8b}, [c15], %[input_depth]\n"
+        "ld1 {v16.8b}, [c15], %[input_depth]\n"
+        "ld1 {v17.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v12.8b}, [x13], %[input_depth]\n"
         "ld1 {v13.8b}, [x13], %[input_depth]\n"
         "ld1 {v14.8b}, [x13], %[input_depth]\n"
         "ld1 {v15.8b}, [x15], %[input_depth]\n"
         "ld1 {v16.8b}, [x15], %[input_depth]\n"
         "ld1 {v17.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
         "saddw v9.8h, v28.8h, v9.8b\n"
         "ld1 {v24.4s}, [%[bias_ptr]]\n"
         "saddw v10.8h, v28.8h, v10.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v25.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v25.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "saddw v11.8h, v28.8h, v11.8b\n"
         "ld1 {v26.4s}, [%[bias_ptr]]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v27.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v27.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "saddw v12.8h, v28.8h, v12.8b\n"
         "saddw v13.8h, v28.8h, v13.8b\n"
         "saddw v14.8h, v28.8h, v14.8b\n"
@@ -1651,51 +2324,127 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
         //"loop_%=:\n"
         DEPTHWISECONV_LABEL_HEIGHT_1_WIDTH_2_LOOP ":\n"
           "smlal v24.4s, v0.4h, v9.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v18.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v18.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v25.4s, v0.8h, v9.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v19.8b}, [c12]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v19.8b}, [x12]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v26.4s, v0.4h, v11.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v20.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v20.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v27.4s, v0.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v21.8b}, [c13]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v21.8b}, [x13]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v24.4s, v1.4h, v10.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v22.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v22.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v25.4s, v1.8h, v10.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v23.8b}, [c15]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v23.8b}, [x15]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v24.4s, v2.4h, v11.4h\n"
           "subs w14, w14, #2\n"
           "smlal2 v25.4s, v2.8h, v11.8h\n"
           "cmp w14, #3\n"
           "smlal v24.4s, v3.4h, v12.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "add c11, c11, %[input_width_increment]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "add x11, x11, %[input_width_increment]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v25.4s, v3.8h, v12.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "mov c12, c11\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "mov x12, x11\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v26.4s, v3.4h, v14.4h\n"
-          "add x13, x12, %[input_row_size]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "add c13, c12, %[input_row_size]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
+          "add c13, c12, %[input_row_size]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v27.4s, v3.8h, v14.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "add c15, c13, %[input_row_size]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "add x15, x13, %[input_row_size]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v24.4s, v4.4h, v13.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v9.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v9.8b}, [x12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "smlal2 v25.4s, v4.8h, v13.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v10.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v10.8b}, [x12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "smlal v24.4s, v5.4h, v14.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v11.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v11.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v25.4s, v5.8h, v14.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v12.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v12.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v24.4s, v6.4h, v15.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v13.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v13.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v25.4s, v6.8h, v15.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v14.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v14.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v26.4s, v6.4h, v17.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v15.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v15.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v27.4s, v6.8h, v17.8h\n"
           "smlal v24.4s, v7.4h, v16.4h\n"
           "smlal2 v25.4s, v7.8h, v16.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v16.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v16.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v24.4s, v8.4h, v17.4h\n"
           "saddw v18.8h, v28.8h, v18.8b\n"
           "smlal2 v25.4s, v8.8h, v17.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v17.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v17.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v19.8h, v28.8h, v19.8b\n"
 
           "smlal v26.4s, v1.4h, v18.4h\n"
@@ -1736,15 +2485,28 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
           "dup v28.8h, w0\n"
           "dup v27.16b, w3\n"
           "dup v29.16b, w4\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v25.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v25.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smax v24.16b, v24.16b, v27.16b\n"
           "smin v24.16b, v24.16b, v29.16b\n"
           "saddw v9.8h, v28.8h, v9.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "st1 {v24.8b}, [c6], x5\n"
+          "ld1 {v27.4s}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "st1 {v24.8b}, [x6], x5\n"
           "ld1 {v27.4s}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v10.8h, v28.8h, v10.8b\n"
           "mov v26.d[0], v24.d[1]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "st1 {v26.8b}, [c6], x5\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "st1 {v26.8b}, [x6], x5\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "saddw v11.8h, v28.8h, v11.8b\n"
           "saddw v12.8h, v28.8h, v12.8b\n"
           "saddw v13.8h, v28.8h, v13.8b\n"
@@ -1765,17 +2527,41 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
         // Handle last two horizontal outputs if exists.
         DEPTHWISECONV_LABEL_HEIGHT_1_WIDTH_2_LEFTOVER ":\n"
         "smlal v24.4s, v0.4h, v9.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v18.8b}, [c12], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v18.8b}, [x12], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "smlal2 v25.4s, v0.8h, v9.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v19.8b}, [c12]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v19.8b}, [x12]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "smlal v26.4s, v0.4h, v11.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v20.8b}, [c13], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v20.8b}, [x13], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "smlal2 v27.4s, v0.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v21.8b}, [c13]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v21.8b}, [x13]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "smlal v24.4s, v1.4h, v10.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v22.8b}, [c15], %[input_depth]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v22.8b}, [x15], %[input_depth]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "smlal2 v25.4s, v1.8h, v10.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v23.8b}, [c15]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v23.8b}, [x15]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "smlal v24.4s, v2.4h, v11.4h\n"
         "smlal2 v25.4s, v2.8h, v11.8h\n"
         "smlal v24.4s, v3.4h, v12.4h\n"
@@ -1836,9 +2622,17 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
         "sqxtn2 v24.16b, v26.8h\n"
         "smax v24.16b, v24.16b, v28.16b\n"
         "smin v24.16b, v24.16b, v29.16b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "st1 {v24.8b}, [c6], x5\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "st1 {v24.8b}, [x6], x5\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "mov v26.d[0], v24.d[1]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "st1 {v26.8b}, [c6]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "st1 {v26.8b}, [x6]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "dup v28.8h, w0\n"
         "b " DEPTHWISECONV_LABEL_HEIGHT_1_END "f\n"
 
@@ -1878,7 +2672,11 @@ struct DepthwiseConvWindowPerChannel<DepthwiseConvOutputRounding::kUpward, 8, 2,
         "sqxtn v24.8b, v24.8h\n"
         "smax v24.8b, v24.8b, v26.8b\n"
         "smin v24.8b, v24.8b, v27.8b\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "st1 {v24.8b}, [c6]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "st1 {v24.8b}, [x6]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
         DEPTHWISECONV_LABEL_HEIGHT_1_END ":\n"
     :
@@ -2058,22 +2856,46 @@ struct DepthwiseConvPartialPerChannel<DepthwiseConvOutputRounding::kUpward,
         "ldr x15, [%[params_ptr], #" STR(OFFSET_OUTPUT_DEPTH) "]\n"
         "ldr x9, [%[params_ptr], #" STR(OFFSET_INPUT_ROW_SIZE) "]\n"
         "cmp x15, #16\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "add c12, %[input_ptr], x15\n"
+        "add c13, %[input_ptr], x9\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "add x12, %[input_ptr], x15\n"
         "add x13, %[input_ptr], x9\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "ld1 {v8.8b}, [%[input_ptr]], #8\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "add c14, c13, x15\n"
+        "ld1 {v9.8b}, [c12], #8\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "add x14, x13, x15\n"
         "ld1 {v9.8b}, [x12], #8\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "ldr x6, [%[params_ptr], #" STR(OFFSET_FILTER_ROW_SIZE) "]\n"
 
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "add c9, %[filter_ptr], x15\n"
+        "ld1 {v10.8b}, [c13], #8\n"
+        "add c10, %[filter_ptr], x6\n"
+        "ld1 {v11.8b}, [c14], #8\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "add x9, %[filter_ptr], x15\n"
         "ld1 {v10.8b}, [x13], #8\n"
         "add x10, %[filter_ptr], x6\n"
         "ld1 {v11.8b}, [x14], #8\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "ld1 {v0.8b}, [%[filter_ptr]], #8\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "add c11, c10, x15\n"
+        "ld1 {v1.8b}, [c9], #8\n"
+        "ld1 {v2.8b}, [c10], #8\n"
+        "ld1 {v3.8b}, [c11], #8\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "add x11, x10, x15\n"
         "ld1 {v1.8b}, [x9], #8\n"
         "ld1 {v2.8b}, [x10], #8\n"
         "ld1 {v3.8b}, [x11], #8\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
         // Load constants.
         "ldr w6, [%[params_ptr], #" STR(OFFSET_INPUT_OFFSET) "]\n"
@@ -2116,16 +2938,37 @@ struct DepthwiseConvPartialPerChannel<DepthwiseConvOutputRounding::kUpward,
           "ld1 {v0.8b}, [%[filter_ptr]], #8\n"
           "smlal v16.4s, v1.4h, v9.4h\n"
           "smlal2 v17.4s, v1.8h, v9.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v9.8b}, [c12], #8\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v9.8b}, [x12], #8\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v16.4s, v2.4h, v10.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v1.8b}, [c9], #8\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v1.8b}, [x9], #8\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v17.4s, v2.8h, v10.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v10.8b}, [c13], #8\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v10.8b}, [x13], #8\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v16.4s, v3.4h, v11.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v2.8b}, [c10], #8\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v2.8b}, [x10], #8\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v17.4s, v3.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v11.8b}, [c14], #8\n"
+          "ld1 {v3.8b}, [c11], #8\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v11.8b}, [x14], #8\n"
           "ld1 {v3.8b}, [x11], #8\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
           "sqrdmulh v16.4s, v16.4s, v4.4s\n"
           "sqrdmulh v17.4s, v17.4s, v5.4s\n"
@@ -2220,30 +3063,70 @@ struct DepthwiseConvPartialPerChannel<DepthwiseConvOutputRounding::kUpward,
 
         // Load input and filter values.
         "ldr x7, [%[params_ptr], #" STR(OFFSET_INPUT_DEPTH) "]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "mov c12, %[input_ptr]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "mov x12, %[input_ptr]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "ldr x11, [%[params_ptr], #" STR(OFFSET_INPUT_ROW_SIZE) "]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "mov c9, %[filter_ptr]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "mov x9, %[filter_ptr]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "ldr x14, [%[params_ptr], #" STR(OFFSET_FILTER_ROW_SIZE) "]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "add c13, c12, x11\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "add x13, x12, x11\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "ldr x15, [%[params_ptr], #" STR(OFFSET_OUTPUT_DEPTH) "]\n"
 
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v8.8b}, [c12], x7\n"
+        "add c10, c9, x14\n"
+        "ld1 {v9.8b}, [c12], x7\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v8.8b}, [x12], x7\n"
         "add x10, x9, x14\n"
         "ld1 {v9.8b}, [x12], x7\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "cmp x15, #16\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v10.8b}, [c12]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v10.8b}, [x12]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "add %[input_ptr], %[input_ptr], #8\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v11.8b}, [c13], x7\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v11.8b}, [x13], x7\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "add %[filter_ptr], %[filter_ptr], #8\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v12.8b}, [c13], x7\n"
+        "ld1 {v13.8b}, [c13]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v12.8b}, [x13], x7\n"
         "ld1 {v13.8b}, [x13]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v0.8b}, [c9], x7\n"
+        "ld1 {v1.8b}, [c9], x7\n"
+        "ld1 {v2.8b}, [c9]\n"
+        "ld1 {v3.8b}, [c10], x7\n"
+        "ld1 {v4.8b}, [c10], x7\n"
+        "ld1 {v5.8b}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v0.8b}, [x9], x7\n"
         "ld1 {v1.8b}, [x9], x7\n"
         "ld1 {v2.8b}, [x9]\n"
         "ld1 {v3.8b}, [x10], x7\n"
         "ld1 {v4.8b}, [x10], x7\n"
         "ld1 {v5.8b}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
         // Load constants.
         "ldr w12, [%[params_ptr], #" STR(OFFSET_INPUT_OFFSET) "]\n"
@@ -2282,43 +3165,107 @@ struct DepthwiseConvPartialPerChannel<DepthwiseConvOutputRounding::kUpward,
 
         //"loop_%=:\n"
         DEPTHWISECONV_LABEL_DEPTH_8_LOOP ":\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "mov c12, %[input_ptr]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "mov x12, %[input_ptr]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "subs x15, x15, #8\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "add c13, c12, x11\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "add x13, x12, x11\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "cmp x15, #16\n"
           "add %[input_ptr], %[input_ptr], #8\n"
 
           "smlal v16.4s, v0.4h, v8.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "mov c9, %[filter_ptr]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "mov x9, %[filter_ptr]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v17.4s, v0.8h, v8.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v8.8b}, [c12], x7\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v8.8b}, [x12], x7\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v16.4s, v1.4h, v9.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "add c10, c9, x14\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "add x10, x9, x14\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v17.4s, v1.8h, v9.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v9.8b}, [c12], x7\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v9.8b}, [x12], x7\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v16.4s, v2.4h, v10.4h\n"
           "add %[filter_ptr], %[filter_ptr], #8\n"
           "smlal2 v17.4s, v2.8h, v10.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v10.8b}, [c12]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v10.8b}, [x12]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v16.4s, v3.4h, v11.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v0.8b}, [c9], x7\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v0.8b}, [x9], x7\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v17.4s, v3.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v11.8b}, [c13], x7\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v11.8b}, [x13], x7\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v16.4s, v4.4h, v12.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v1.8b}, [c9], x7\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v1.8b}, [x9], x7\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v17.4s, v4.8h, v12.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v12.8b}, [c13], x7\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v12.8b}, [x13], x7\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v16.4s, v5.4h, v13.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v2.8b}, [c9]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v2.8b}, [x9]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v17.4s, v5.8h, v13.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v13.8b}, [c13]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v13.8b}, [x13]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
           "sqrdmulh v16.4s, v16.4s, v6.4s\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v3.8b}, [c10], x7\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v3.8b}, [x10], x7\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "sqrdmulh v17.4s, v17.4s, v7.4s\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v4.8b}, [c10], x7\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v4.8b}, [x10], x7\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "sqrshl v16.4s, v16.4s, v14.4s\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v5.8b}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v5.8b}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "sqrshl v17.4s, v17.4s, v15.4s\n"
           "sqxtn v16.4h, v16.4s\n"
           "sqxtn2 v16.8h, v17.4s\n"
@@ -2417,32 +3364,77 @@ struct DepthwiseConvPartialPerChannel<DepthwiseConvOutputRounding::kUpward,
 
         // Load input and filter values.
         "ldr x6, [%[params_ptr], #" STR(OFFSET_INPUT_DEPTH) "]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "mov c12, %[input_ptr]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "mov x12, %[input_ptr]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "ldr x11, [%[params_ptr], #" STR(OFFSET_INPUT_ROW_SIZE) "]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "mov c7, %[filter_ptr]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "mov x7, %[filter_ptr]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "ldr x5, [%[params_ptr], #" STR(OFFSET_FILTER_ROW_SIZE) "]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "add c13, c12, x11\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "add x13, x12, x11\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "ldr x15, [%[params_ptr], #" STR(OFFSET_OUTPUT_DEPTH) "]\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "add c14, c13, x11\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "add x14, x13, x11\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v8.8b}, [c12], x6\n"
+        "add c9, c7, x5\n"
+        "ld1 {v9.8b}, [c12]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v8.8b}, [x12], x6\n"
         "add x9, x7, x5\n"
         "ld1 {v9.8b}, [x12]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "cmp x15, #16\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "add c10, c9, x5\n"
+        "ld1 {v10.8b}, [c13], x6\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "add x10, x9, x5\n"
         "ld1 {v10.8b}, [x13], x6\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "add %[input_ptr], %[input_ptr], #8\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v11.8b}, [c13]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v11.8b}, [x13]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
         "add %[filter_ptr], %[filter_ptr], #8\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v12.8b}, [c14], x6\n"
+        "ld1 {v13.8b}, [c14]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v12.8b}, [x14], x6\n"
         "ld1 {v13.8b}, [x14]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
+#if defined(__CHERI_PURE_CAPABILITY__)
+        "ld1 {v0.8b}, [c7], x6\n"
+        "ld1 {v1.8b}, [c7]\n"
+        "ld1 {v2.8b}, [c9], x6\n"
+        "ld1 {v3.8b}, [c9]\n"
+        "ld1 {v4.8b}, [c10], x6\n"
+        "ld1 {v5.8b}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
         "ld1 {v0.8b}, [x7], x6\n"
         "ld1 {v1.8b}, [x7]\n"
         "ld1 {v2.8b}, [x9], x6\n"
         "ld1 {v3.8b}, [x9]\n"
         "ld1 {v4.8b}, [x10], x6\n"
         "ld1 {v5.8b}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
         // Load constants.
         "ldr w12, [%[params_ptr], #" STR(OFFSET_INPUT_OFFSET) "]\n"
@@ -2481,45 +3473,115 @@ struct DepthwiseConvPartialPerChannel<DepthwiseConvOutputRounding::kUpward,
 
         //"loop_%=:\n"
         DEPTHWISECONV_LABEL_DEPTH_8_LOOP ":\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "mov c12, %[input_ptr]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "mov x12, %[input_ptr]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "subs x15, x15, #8\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "add c13, c12, x11\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "add x13, x12, x11\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "cmp x15, #16\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "add c14, c13, x11\n"
+          "add %[input_ptr], %[input_ptr], #16\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "add x14, x13, x11\n"
           "add %[input_ptr], %[input_ptr], #8\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
           "smlal v16.4s, v0.4h, v8.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "mov c7, %[filter_ptr]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "mov x7, %[filter_ptr]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v17.4s, v0.8h, v8.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v8.8b}, [c12], x6\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v8.8b}, [x12], x6\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v16.4s, v1.4h, v9.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "add c9, c7, x5\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "add x9, x7, x5\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v17.4s, v1.8h, v9.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "add c10, c9, x5\n"
+          "ld1 {v9.8b}, [c12]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "add x10, x9, x5\n"
           "ld1 {v9.8b}, [x12]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v16.4s, v2.4h, v10.4h\n"
           "add %[filter_ptr], %[filter_ptr], #8\n"
           "smlal2 v17.4s, v2.8h, v10.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v10.8b}, [c13], x6\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v10.8b}, [x13], x6\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v16.4s, v3.4h, v11.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v0.8b}, [c7], x6\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v0.8b}, [x7], x6\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v17.4s, v3.8h, v11.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v11.8b}, [c13]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v11.8b}, [x13]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v16.4s, v4.4h, v12.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v1.8b}, [c7]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v1.8b}, [x7]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v17.4s, v4.8h, v12.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v12.8b}, [c14], x6\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v12.8b}, [x14], x6\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal v16.4s, v5.4h, v13.4h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v2.8b}, [c9], x6\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v2.8b}, [x9], x6\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "smlal2 v17.4s, v5.8h, v13.8h\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v13.8b}, [c14]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v13.8b}, [x14]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
 
           "sqrdmulh v16.4s, v16.4s, v6.4s\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v3.8b}, [c9]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v3.8b}, [x9]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "sqrdmulh v17.4s, v17.4s, v7.4s\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v4.8b}, [c10], x6\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v4.8b}, [x10], x6\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "sqrshl v16.4s, v16.4s, v14.4s\n"
+#if defined(__CHERI_PURE_CAPABILITY__)
+          "ld1 {v5.8b}, [c10]\n"
+#else   // !__CHERI_PURE_CAPABILITY__
           "ld1 {v5.8b}, [x10]\n"
+#endif  // __CHERI_PURE_CAPABILITY__
           "sqrshl v17.4s, v17.4s, v15.4s\n"
           "sqxtn v16.4h, v16.4s\n"
           "sqxtn2 v16.8h, v17.4s\n"
